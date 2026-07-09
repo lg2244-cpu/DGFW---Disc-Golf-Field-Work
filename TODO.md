@@ -43,3 +43,25 @@ Byttet fra `getCurrentPosition` (tar det aller første, ofte upresise fiksen) ti
 - GPS-pin-ikonet pulserer mens det søkes, roer seg når signalet er godt.
 - `stopPositionWatch()` kalles ved bekreftet måling, ved "← Velg annen disk", ved "Hopp over"-sikteretning, og som sikkerhetsnett øverst i `showTab()` — ingen watch skal fortsette å kjøre i bakgrunnen og tappe batteri etter at brukeren har forlatt måleskjermen.
 - `getCurrentPosition`-baserte `getPosition()`-helperen er fjernet (ubrukt etter omleggingen). `describeGeoError`s timeout-tekst oppdatert til 15 sekunder (matcher nytt `timeout`-alternativ i `watchPosition`).
+
+## 9. Vindstille som eget vindalternativ — ferdig ✓
+Lagt til «Vindstille» som fjerde valg i vindretning-chippene (ved siden av Medvind/Motvind/Sidevind). Når det velges skjules styrke-raden helt og `windStrength` tvinges til `null`, siden styrke ikke gir mening ved vindstille. Gjenbrukt samme liste (`WIND_DIRECTIONS`) i filter-chippene på disk-detaljvisningen, så man også kan filtrere kast på «vindstille» der.
+
+## 10. Flight-tall på disker (Speed/Glide/Turn/Fade) — ferdig ✓
+Fire valgfrie numeriske felt i legg til/rediger-disk-modalen (halve poeng støttet, f.eks. Turn -1.5, som er vanlig på ekte disk-spesifikasjoner): Speed (1–15), Glide (1–7), Turn (-5–1), Fade (0–5). Vises som en kompakt linje under disk-typen i Bag-listen (f.eks. «12 | 5 | -1.5 | 3») kun når minst ett av tallene er satt. Ikke obligatorisk — eksisterende disker uten disse verdiene fungerer som før.
+
+## 11. Import/eksport av bag som .txt — ferdig ✓
+To knapper øverst i Bag-fanen. Eksport laster ned en `.txt`-fil (kommaseparert, én disk per linje: `navn,type,speed,glide,turn,fade,farge`, med en `#`-kommentarlinje øverst som forklarer formatet) via Blob + midlertidig nedlastingslenke. Import leser en valgt fil via FileReader og «upserter»: disker matches på navn (case-insensitivt) — finnes en disk med samme navn fra før oppdateres den, ellers legges en ny disk til. Ingen duplikater. Ukjente/manglende diskType-strenger normaliseres mot de fire kjente kategoriene (case-insensitivt), rader uten navn/type hoppes over. Viser oppsummering («X nye, Y oppdatert, Z hoppet over») etter import.
+
+## 12. Session-nivå over Ny runde — ferdig ✓
+Nytt lag mellom Bag og runde-registrering: en **session** låser utgangspunkt *og* sikteretning på tvers av så mange runder man vil, siden det vanligste er å teste samme disker gjentatte ganger fra samme fysiske sted.
+- Trykker man på «Ny runde»-fanen uten aktiv session, startes automatisk et nytt session-oppsett (samme GPS-skjermer som før, nå med overskriftene «Ny session · Utgangspunkt»/«Ny session · Sikteretning»). Er en session allerede aktiv, hopper man rett til rundevelgeren.
+- Rundevelgeren (`screen-round`) har fått en «Rediger utgangspunkt/sikteretning»-knapp (kaller `editSessionPosition()`) og en «Avslutt session»-knapp (`endSession()`). Redigering midt i en runde med allerede registrerte kast varsler først og nullstiller de kastene (siden de er beregnet fra det gamle utgangspunktet og blir ugyldige).
+- **Vind flyttet fra sesjon- til rundenivå** — chippene sitter nå på rundevelgeren i stedet for utgangspunkt-skjermen, siden forholdene kan endre seg over en lengre økt selv om posisjonen ikke gjør det.
+- Diskvalget (`selectedForRound`) beholdes bevisst mellom runder i samme session (nullstilles kun ved helt ny session) — vanligvis vil man teste samme disker om igjen. `resetRound()` (Ny runde-knappen på Oversikt) nullstiller derfor bare kast/vind, ikke diskvalget eller selve sesjonen.
+- Kun in-memory, som resten av GPS-tilstanden — en session overlever ikke at appen lukkes/refreshes.
+
+## Idébank — mulige fremtidige steg (ikke påbegynt)
+Ting som er verdt å vurdere senere, men som ikke er i arbeid nå:
+
+- **Capacitor / nativ app** — pakk dagens HTML/JS-kode i et nativt app-skall (`@capacitor/core` + `@capacitor/geolocation`) hvis nettleser-GPS fortsatt ikke er godt nok etter watchPosition-omleggingen (pkt. 8), eller hvis man trenger stabil bakgrunnssporing mens skjermen er låst (iOS dreper ofte GPS-sporing i bakgrunnsfaner). Gir tilgang til app-butikkene, men er et større steg (bygge-pipeline, plattform-spesifikk publisering) — kun aktuelt hvis de nettleser-baserte forbedringene viser seg utilstrekkelige i praksis. Nevnt som fremtidig mulighet i [README.md](README.md).

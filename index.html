@@ -178,6 +178,18 @@
   .swatch-row{display:flex; gap:10px; margin-top:6px;}
   .swatch-pick{width:30px;height:30px;border-radius:50%; cursor:pointer; box-shadow:inset 0 0 0 2px rgba(0,0,0,.15);}
   .swatch-pick.sel{box-shadow:0 0 0 2.5px var(--forest-dark);}
+  .flight-numbers-row{display:flex; gap:8px;}
+  .flight-numbers-row .flight-num-field{flex:1;}
+  .flight-numbers-row .flight-num-field label{
+    font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:var(--slate);
+    display:block; margin-bottom:4px; text-align:center;
+  }
+  .flight-numbers-row .flight-num-field input{
+    width:100%; padding:10px 4px; border-radius:10px; text-align:center;
+    background:var(--chalk-dim); border:1px solid var(--line);
+    color:var(--forest-dark); font-family:'Space Mono',monospace; font-size:14px;
+  }
+  .flight-nums{font-family:'Space Mono',monospace; font-size:11px; color:var(--slate); margin-top:3px;}
 
   .empty-note{font-size:12.5px; color:var(--slate); line-height:1.5; margin-top:6px;}
 
@@ -327,24 +339,43 @@
     <!-- SCREEN: BAG -->
     <section class="screen active" id="screen-bag">
       <h2 class="screentitle">Bag · Diskregister</h2>
+      <div class="btn-row" style="margin-top:0; margin-bottom:10px;">
+        <button class="btn btn-secondary btn-small" style="margin-bottom:0;" onclick="exportDiscs()">Eksporter →</button>
+        <button class="btn btn-secondary btn-small" style="margin-bottom:0;" onclick="triggerImportDiscs()">Importer →</button>
+        <input type="file" id="import-discs-input" accept=".txt,text/plain" style="display:none;" onchange="handleImportDiscsFile(event)">
+      </div>
       <div id="disc-list"><p class="empty-note">Laster registeret …</p></div>
-      <p class="empty-note">Dette er diskene dine. Legg til alle diskene du normalt kaster med — du velger blant disse når du starter en ny runde.</p>
+      <p class="empty-note">Dette er diskene dine. Legg til alle diskene du normalt kaster med — du velger blant disse når du starter en ny runde. Eksporter for å redigere/legge til mange på PC, importer for å hente dem inn igjen (oppdaterer disker med samme navn, legger til nye).</p>
       <button class="fab" onclick="openModal()">+</button>
     </section>
 
     <!-- SCREEN: NY RUNDE - velg disker -->
     <section class="screen" id="screen-round">
       <h2 class="screentitle">Ny runde · Velg disker</h2>
+      <p class="empty-note" id="session-status-note" style="margin-bottom:10px;">Session aktiv · samme utgangspunkt og sikteretning brukes til alle runder i denne økten.</p>
+      <div class="btn-row" style="margin-top:0; margin-bottom:12px;">
+        <button class="btn btn-secondary btn-small" style="margin-bottom:0;" onclick="editSessionPosition()">Rediger utgangspunkt/sikteretning</button>
+        <button class="btn btn-ghost btn-small" style="margin-bottom:0;" onclick="endSession()">Avslutt session</button>
+      </div>
       <p class="empty-note" style="margin-bottom:12px;">Velg diskene du skal kaste ut. Rekkefølgen her har ingen betydning — du registrerer dem etterpå i den rekkefølgen du går bort til dem.</p>
       <div id="round-list"></div>
+
+      <div style="margin-top:10px;">
+        <div class="field" style="margin-bottom:0;"><label>Vindforhold (valgfritt, gjelder denne runden)</label></div>
+        <span class="chip-select-label" style="margin-top:10px;">Retning</span>
+        <div class="chip-select-row" id="wind-direction-row"></div>
+        <span class="chip-select-label" id="wind-strength-label">Styrke</span>
+        <div class="chip-select-row" id="wind-strength-row"></div>
+      </div>
+
       <div class="btn-row">
-        <button class="btn btn-primary" id="start-round-btn" onclick="goToStartpoint()" disabled>Start runde →</button>
+        <button class="btn btn-primary" id="start-round-btn" onclick="startRoundInSession()" disabled>Start runde →</button>
       </div>
     </section>
 
-    <!-- SCREEN: SETT UTGANGSPUNKT -->
+    <!-- SCREEN: SETT UTGANGSPUNKT (ny session, eller rediger midt i økten) -->
     <section class="screen" id="screen-startpoint">
-      <h2 class="screentitle">1 · Utgangspunkt</h2>
+      <h2 class="screentitle">Ny session · Utgangspunkt</h2>
       <div class="gps-hero">
         <div class="gps-pin" id="startpoint-pin">
           <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#FF6A39" stroke-width="2"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>
@@ -357,19 +388,11 @@
       <button class="btn btn-ghost btn-small" id="startpoint-override-btn" style="margin-top:8px; margin-bottom:0; display:none;" onclick="confirmStartpoint()">Bruk nåværende posisjon likevel</button>
       <p class="empty-note" style="margin-top:10px;">Fungerer det ikke? Åpne denne siden i en egen nettleserfane (ikke i forhåndsvisning/app-vindu), og trykk "Tillat" når nettleseren spør om posisjon.</p>
       <button class="btn btn-ghost" style="margin-top:10px;" id="startpoint-next" onclick="goToAimScreen()" disabled>Neste: sikteretning →</button>
-
-      <div style="margin-top:24px;">
-        <div class="field" style="margin-bottom:0;"><label>Vindforhold (valgfritt, gjelder hele runden)</label></div>
-        <span class="chip-select-label" style="margin-top:10px;">Retning</span>
-        <div class="chip-select-row" id="wind-direction-row"></div>
-        <span class="chip-select-label">Styrke</span>
-        <div class="chip-select-row" id="wind-strength-row"></div>
-      </div>
     </section>
 
     <!-- SCREEN: SIKTERETNING -->
     <section class="screen" id="screen-aim">
-      <h2 class="screentitle">2 · Sikteretning</h2>
+      <h2 class="screentitle">Ny session · Sikteretning</h2>
       <div class="gps-hero">
         <div class="gps-pin" id="aim-pin">
           <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#FF6A39" stroke-width="2"><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/><circle cx="12" cy="12" r="4"/></svg>
@@ -382,13 +405,13 @@
       <button class="btn btn-ghost btn-small" id="aim-override-btn" style="margin-top:8px; margin-bottom:0; display:none;" onclick="confirmAim()">Bruk nåværende posisjon likevel</button>
       <div class="btn-row">
         <button class="btn btn-ghost" onclick="skipAim()">Hopp over (kun avstand)</button>
-        <button class="btn btn-secondary" id="aim-next" onclick="beginThrowFlow()" disabled>Neste →</button>
+        <button class="btn btn-secondary" id="aim-next" onclick="finishSessionSetup()" disabled>Neste →</button>
       </div>
     </section>
 
     <!-- SCREEN: KAST FLOW -->
     <section class="screen" id="screen-throw">
-      <h2 class="screentitle">3 · Registrer kast</h2>
+      <h2 class="screentitle">Registrer kast</h2>
 
       <!-- Velger: hvilken disk står du ved? -->
       <div id="throw-picker-view">
@@ -513,6 +536,27 @@
         </select>
       </div>
       <div class="field">
+        <label>Flight-tall (valgfritt)</label>
+        <div class="flight-numbers-row">
+          <div class="flight-num-field">
+            <label for="new-disc-speed">Speed</label>
+            <input type="number" id="new-disc-speed" min="1" max="15" step="0.5" placeholder="–">
+          </div>
+          <div class="flight-num-field">
+            <label for="new-disc-glide">Glide</label>
+            <input type="number" id="new-disc-glide" min="1" max="7" step="0.5" placeholder="–">
+          </div>
+          <div class="flight-num-field">
+            <label for="new-disc-turn">Turn</label>
+            <input type="number" id="new-disc-turn" min="-5" max="1" step="0.5" placeholder="–">
+          </div>
+          <div class="flight-num-field">
+            <label for="new-disc-fade">Fade</label>
+            <input type="number" id="new-disc-fade" min="0" max="5" step="0.5" placeholder="–">
+          </div>
+        </div>
+      </div>
+      <div class="field">
         <label>Farge</label>
         <div class="swatch-row" id="swatch-row"></div>
       </div>
@@ -528,10 +572,10 @@
 <script>
 // ---------- STATE ----------
 const COLORS = ["#FF6A39","#D8C25A","#5FA88A","#3B3B3B","#7C8AC8","#C25C5C"];
-const WIND_DIRECTIONS = [{key:'med',label:'Medvind'},{key:'mot',label:'Motvind'},{key:'side',label:'Sidevind'}];
+const WIND_DIRECTIONS = [{key:'med',label:'Medvind'},{key:'mot',label:'Motvind'},{key:'side',label:'Sidevind'},{key:'stille',label:'Vindstille'}];
 const WIND_STRENGTHS = [{key:'svak',label:'Svak'},{key:'middels',label:'Middels'},{key:'sterk',label:'Sterk'}];
 const THROW_TYPES = [{key:'hyzer',label:'Hyzer'},{key:'anhyzer',label:'Anhyzer'},{key:'flatt',label:'Flatt'}];
-const WIND_DIR_LABELS = {med:'medvind', mot:'motvind', side:'sidevind'};
+const WIND_DIR_LABELS = {med:'medvind', mot:'motvind', side:'sidevind', stille:'vindstille'};
 let discs = [
   {id:1, name:"Innova Destroyer", type:"Distance Driver", color:"#FF6A39"},
   {id:2, name:"Discmania PD", type:"Mid-range", color:"#D8C25A"},
@@ -539,6 +583,7 @@ let discs = [
 ];
 let nextId = 4;
 let selectedForRound = [];
+let sessionActive = false; // true når utgangspunkt+sikteretning er satt for denne økten (kan romme flere runder)
 let startpoint = null;
 let aimVector = null; // normalized {x,y} in local east/north meters, or null if skipped
 let throwQueue = []; // sett av discId'er valgt for runden (ingen fast rekkefølge)
@@ -549,7 +594,7 @@ let roundSaved = false;
 let pickedColor = COLORS[0];
 let storageOk = true;
 let editingDiscId = null; // null = "legg til"-modus i disk-modalen, ellers id på disken som redigeres
-let windDirection = null; // 'med'|'mot'|'side'|null, satt én gang per runde
+let windDirection = null; // 'med'|'mot'|'side'|'stille'|null, satt per runde
 let windStrength = null; // 'svak'|'middels'|'sterk'|null
 let currentThrowType = null; // 'hyzer'|'anhyzer'|'flatt'|null, satt per kast
 let detailDiscId = null; // disken som vises i screen-discdetail akkurat nå
@@ -646,7 +691,14 @@ function renderChipRow(containerId, options, currentValue, onSelect){
   });
 }
 function renderWindChips(){
-  renderChipRow('wind-direction-row', WIND_DIRECTIONS, windDirection, (v)=>{ windDirection=v; renderWindChips(); });
+  renderChipRow('wind-direction-row', WIND_DIRECTIONS, windDirection, (v)=>{
+    windDirection=v;
+    if(windDirection==='stille') windStrength=null; // styrke gir ikke mening ved vindstille
+    renderWindChips();
+  });
+  const strengthApplicable = windDirection!=='stille';
+  document.getElementById('wind-strength-label').style.display = strengthApplicable ? 'block' : 'none';
+  document.getElementById('wind-strength-row').style.display = strengthApplicable ? 'flex' : 'none';
   renderChipRow('wind-strength-row', WIND_STRENGTHS, windStrength, (v)=>{ windStrength=v; renderWindChips(); });
 }
 function renderThrowTypeChips(){
@@ -728,7 +780,15 @@ function showTab(name){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   if(name==='bag'){ document.getElementById('screen-bag').classList.add('active'); }
-  if(name==='round'){ renderRoundList(); document.getElementById('screen-round').classList.add('active'); }
+  if(name==='round'){
+    if(sessionActive){
+      renderRoundList();
+      renderWindChips();
+      document.getElementById('screen-round').classList.add('active');
+    }else{
+      beginNewSession();
+    }
+  }
   if(name==='summary'){ renderSummary(); document.getElementById('screen-summary').classList.add('active'); }
   if(name==='history'){ renderHistoryList(); document.getElementById('screen-history').classList.add('active'); }
   const tabBtn = document.querySelector('.tab[data-tab="'+name+'"]');
@@ -740,17 +800,23 @@ function showScreen(id){
 }
 
 // ---------- BAG ----------
+function fmtFlightNum(v){ return (v===undefined || v===null || v==='') ? '–' : v; }
+function hasAnyFlightNum(d){ return [d.speed, d.glide, d.turn, d.fade].some(v=>v!==undefined && v!==null && v!==''); }
 function renderBag(){
   const wrap = document.getElementById('disc-list');
   wrap.innerHTML = '';
   discs.forEach(d=>{
     const el = document.createElement('div');
     el.className = 'disc-card';
+    const flightHtml = hasAnyFlightNum(d)
+      ? `<div class="flight-nums">${fmtFlightNum(d.speed)} | ${fmtFlightNum(d.glide)} | ${fmtFlightNum(d.turn)} | ${fmtFlightNum(d.fade)}</div>`
+      : '';
     el.innerHTML = `
       <div class="disc-swatch" style="background:${d.color}"></div>
       <div class="disc-info">
         <div class="disc-name">${d.name}</div>
         <div class="disc-type">${d.type}</div>
+        ${flightHtml}
       </div>
       <div class="disc-actions">
         <button class="icon-btn" aria-label="Rediger ${d.name}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>
@@ -767,6 +833,10 @@ function openModal(discId){
   document.getElementById('modal-title-text').textContent = disc ? 'Rediger disk' : 'Legg til disk';
   document.getElementById('new-disc-name').value = disc ? disc.name : '';
   document.getElementById('new-disc-type').value = disc ? disc.type : 'Distance Driver';
+  document.getElementById('new-disc-speed').value = disc && disc.speed!=null ? disc.speed : '';
+  document.getElementById('new-disc-glide').value = disc && disc.glide!=null ? disc.glide : '';
+  document.getElementById('new-disc-turn').value = disc && disc.turn!=null ? disc.turn : '';
+  document.getElementById('new-disc-fade').value = disc && disc.fade!=null ? disc.fade : '';
   pickedColor = disc ? disc.color : COLORS[0];
   const row = document.getElementById('swatch-row');
   row.innerHTML = '';
@@ -780,15 +850,24 @@ function openModal(discId){
   document.getElementById('modal-backdrop').classList.add('open');
 }
 function closeModal(){ document.getElementById('modal-backdrop').classList.remove('open'); editingDiscId = null; }
+function readFlightNumInput(id){
+  const v = document.getElementById(id).value.trim();
+  return v==='' ? undefined : parseFloat(v);
+}
 function saveDisc(){
   const name = document.getElementById('new-disc-name').value.trim();
   if(!name){ alert('Gi disken et navn'); return; }
   const type = document.getElementById('new-disc-type').value;
+  const speed = readFlightNumInput('new-disc-speed');
+  const glide = readFlightNumInput('new-disc-glide');
+  const turn = readFlightNumInput('new-disc-turn');
+  const fade = readFlightNumInput('new-disc-fade');
   if(editingDiscId){
     const disc = discs.find(d=>d.id===editingDiscId);
     disc.name = name; disc.type = type; disc.color = pickedColor;
+    disc.speed = speed; disc.glide = glide; disc.turn = turn; disc.fade = fade;
   }else{
-    discs.push({id:nextId++, name, type, color:pickedColor});
+    discs.push({id:nextId++, name, type, color:pickedColor, speed, glide, turn, fade});
   }
   renderBag();
   persistDiscs();
@@ -804,6 +883,77 @@ function deleteDisc(discId){
   if(idx>-1) selectedForRound.splice(idx,1);
   persistDiscs();
   renderBag();
+}
+
+// ---------- IMPORT / EKSPORT ----------
+const KNOWN_DISC_TYPES = ['Distance Driver','Fairway Driver','Mid-range','Putt and Approach'];
+function normalizeDiscType(raw){
+  const match = KNOWN_DISC_TYPES.find(t=>t.toLowerCase()===raw.toLowerCase());
+  return match || raw;
+}
+function exportDiscs(){
+  const header = '# navn,type,speed,glide,turn,fade,farge — speed/glide/turn/fade og farge er valgfrie, la stå tomt (f.eks. "Innova Destroyer,Distance Driver,,,,," )';
+  const lines = discs.map(d => [
+    d.name, d.type,
+    d.speed ?? '', d.glide ?? '', d.turn ?? '', d.fade ?? '',
+    d.color || ''
+  ].join(','));
+  const content = [header, ...lines].join('\n');
+  const blob = new Blob([content], {type:'text/plain;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'dg-field-work-disker.txt';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function triggerImportDiscs(){
+  document.getElementById('import-discs-input').click();
+}
+function handleImportDiscsFile(evt){
+  const file = evt.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    importDiscsFromText(reader.result);
+    evt.target.value = ''; // slik at samme fil kan velges på nytt senere
+  };
+  reader.readAsText(file);
+}
+function importDiscsFromText(text){
+  const lines = text.split(/\r?\n/);
+  let added = 0, updated = 0, skipped = 0, colorIdx = 0;
+  lines.forEach(line=>{
+    const trimmed = line.trim();
+    if(!trimmed || trimmed.startsWith('#')) return;
+    const parts = trimmed.split(',').map(p=>p.trim());
+    const [name, typeRaw, speedRaw, glideRaw, turnRaw, fadeRaw, colorRaw] = parts;
+    if(!name || !typeRaw){ skipped++; return; }
+    const type = normalizeDiscType(typeRaw);
+    const speed = speedRaw ? parseFloat(speedRaw) : undefined;
+    const glide = glideRaw ? parseFloat(glideRaw) : undefined;
+    const turn = turnRaw ? parseFloat(turnRaw) : undefined;
+    const fade = fadeRaw ? parseFloat(fadeRaw) : undefined;
+    let color = colorRaw || '';
+    if(color && !color.startsWith('#')) color = '#' + color;
+    if(!/^#[0-9A-Fa-f]{6}$/.test(color)){
+      color = COLORS[colorIdx % COLORS.length];
+      colorIdx++;
+    }
+    const existing = discs.find(d=>d.name.toLowerCase()===name.toLowerCase());
+    if(existing){
+      existing.type = type; existing.speed = speed; existing.glide = glide; existing.turn = turn; existing.fade = fade; existing.color = color;
+      updated++;
+    }else{
+      discs.push({id:nextId++, name, type, color, speed, glide, turn, fade});
+      added++;
+    }
+  });
+  renderBag();
+  persistDiscs();
+  alert('Import ferdig: ' + added + ' nye disker, ' + updated + ' oppdatert' + (skipped>0 ? ', ' + skipped + ' rader hoppet over (manglet navn/type)' : '') + '.');
 }
 
 // ---------- NY RUNDE ----------
@@ -832,18 +982,18 @@ function renderRoundList(){
   });
   document.getElementById('start-round-btn').disabled = selectedForRound.length===0;
 }
-function goToStartpoint(){
-  throwQueue = selectedForRound.slice();
+function beginNewSession(){
+  selectedForRound = [];
   currentDiscId = null;
   results = [];
-  startpoint = null;
-  aimVector = null;
   roundSaved = false;
   windDirection = null;
   windStrength = null;
+  sessionActive = false;
+  startpoint = null;
+  aimVector = null;
   document.getElementById('accuracy-tag-wrap').innerHTML = '';
   document.getElementById('startpoint-next').disabled = true;
-  renderWindChips();
   showScreen('screen-startpoint');
   startPositionWatch({
     pinEl: document.getElementById('startpoint-pin'),
@@ -852,6 +1002,34 @@ function goToStartpoint(){
     primaryBtnEl: document.getElementById('startpoint-capture-btn'),
     overrideBtnEl: document.getElementById('startpoint-override-btn')
   });
+}
+function editSessionPosition(){
+  if(results.length > 0){
+    const ok = confirm('Du har allerede registrert ' + results.length + ' kast i denne runden basert på gjeldende utgangspunkt/sikteretning. Å endre dette gjør de kastene ugyldige og fjerner dem. Fortsette?');
+    if(!ok) return;
+    results = [];
+  }
+  document.getElementById('accuracy-tag-wrap').innerHTML = '';
+  document.getElementById('startpoint-next').disabled = true;
+  showScreen('screen-startpoint');
+  startPositionWatch({
+    pinEl: document.getElementById('startpoint-pin'),
+    statusEl: document.getElementById('startpoint-status'),
+    accuracyWrapEl: document.getElementById('accuracy-tag-wrap'),
+    primaryBtnEl: document.getElementById('startpoint-capture-btn'),
+    overrideBtnEl: document.getElementById('startpoint-override-btn')
+  });
+}
+function endSession(){
+  const ok = confirm('Avslutte denne sesjonen? Du må sette nytt utgangspunkt og sikteretning for å starte en ny.');
+  if(!ok) return;
+  sessionActive = false;
+  startpoint = null;
+  aimVector = null;
+  selectedForRound = [];
+  results = [];
+  roundSaved = false;
+  showTab('bag');
 }
 
 // ---------- UTGANGSPUNKT ----------
@@ -905,10 +1083,21 @@ function confirmAim(){
 function skipAim(){
   stopPositionWatch();
   aimVector = null;
-  beginThrowFlow();
+  finishSessionSetup();
+}
+function finishSessionSetup(){
+  sessionActive = true;
+  showTab('round');
 }
 
 // ---------- KAST-FLOW (fri rekkefølge: du velger hvilken disk du står ved) ----------
+function startRoundInSession(){
+  throwQueue = selectedForRound.slice();
+  currentDiscId = null;
+  results = [];
+  roundSaved = false;
+  beginThrowFlow();
+}
 function beginThrowFlow(){
   currentDiscId = null;
   showThrowPickerView();
@@ -1127,11 +1316,11 @@ function renderSummary(){
   });
 }
 function resetRound(){
-  selectedForRound = [];
+  // selectedForRound bevisst IKKE nullstilt - samme diskutvalg er vanligvis det du vil teste på nytt i samme session
   results = [];
-  startpoint = null;
-  aimVector = null;
   roundSaved = false;
+  windDirection = null;
+  windStrength = null;
   showTab('round');
 }
 
