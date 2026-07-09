@@ -223,7 +223,7 @@
   .throw-disc-name{font-weight:800; font-size:16.5px;}
   .throw-disc-type{font-size:11.5px; color:var(--slate); text-transform:uppercase; letter-spacing:.08em; margin-bottom:10px;}
 
-  .corridor-wrap{background:var(--forest); border-radius:14px; padding:6px 4px 0; margin:6px 0;}
+  .corridor-wrap{background:var(--chalk-dim); border:1px solid var(--line); border-radius:14px; padding:6px 4px 0; margin:6px 0;}
   .distance-readout{
     font-family:'Space Mono',monospace; font-weight:700;
     font-size:40px; margin:8px 0 0; line-height:1;
@@ -979,11 +979,11 @@ function buildCorridorSVG(points){
   };
   const dots = points.map(p=>{
     const {px,py} = toPx(p);
-    return `<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="7" fill="${p.color}" stroke="#132A21" stroke-width="2"/>`;
+    return `<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="7" fill="${p.color}" stroke="#10241A" stroke-width="2"/>`;
   }).join('');
   return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="180" style="display:block;">
-    <line x1="${w/2}" y1="14" x2="${w/2}" y2="${h-18}" stroke="rgba(244,241,230,0.18)" stroke-width="1.5" stroke-dasharray="4 5"/>
-    <circle cx="${w/2}" cy="${h-18}" r="6" fill="none" stroke="#D8C25A" stroke-width="2"/>
+    <line x1="${w/2}" y1="14" x2="${w/2}" y2="${h-18}" stroke="rgba(16,36,26,0.35)" stroke-width="1.5" stroke-dasharray="4 5"/>
+    <circle cx="${w/2}" cy="${h-18}" r="6" fill="none" stroke="#8A6410" stroke-width="2"/>
     ${dots}
   </svg>`;
 }
