@@ -429,6 +429,11 @@
           <div class="throw-disc-name" id="throw-name">—</div>
           <div class="throw-disc-type" id="throw-type">—</div>
 
+          <p class="gps-status" id="throw-status" style="text-align:center; margin-top:10px;">Søker etter posisjon …</p>
+          <div id="throw-accuracy-wrap" style="text-align:center;"></div>
+          <button class="btn btn-primary" style="margin-top:6px;" id="throw-capture-btn" onclick="confirmThrow()" disabled>Registrer posisjon (GPS)</button>
+          <button class="btn btn-ghost btn-small" id="throw-override-btn" style="margin-top:8px; margin-bottom:0; display:none;" onclick="confirmThrow()">Bruk nåværende posisjon likevel</button>
+
           <div class="corridor-wrap" id="throw-corridor"></div>
 
           <div class="distance-readout" id="throw-distance">–</div>
@@ -440,10 +445,6 @@
             <div class="chip-select-row" id="throw-type-row" style="justify-content:center;"></div>
           </div>
         </div>
-        <p class="gps-status" id="throw-status" style="text-align:center; margin-top:14px;">Søker etter posisjon …</p>
-        <div id="throw-accuracy-wrap" style="text-align:center;"></div>
-        <button class="btn btn-primary" style="margin-top:6px;" id="throw-capture-btn" onclick="confirmThrow()" disabled>Registrer posisjon (GPS)</button>
-        <button class="btn btn-ghost btn-small" id="throw-override-btn" style="margin-top:8px; margin-bottom:0; display:none;" onclick="confirmThrow()">Bruk nåværende posisjon likevel</button>
         <button class="btn btn-secondary" style="margin-top:10px; display:none;" id="throw-next-btn" onclick="afterThrowContinue()">Fortsett →</button>
       </div>
     </section>
@@ -892,12 +893,12 @@ function normalizeDiscType(raw){
   return match || raw;
 }
 function exportDiscs(){
-  const header = '# navn,type,speed,glide,turn,fade,farge — speed/glide/turn/fade og farge er valgfrie, la stå tomt (f.eks. "Innova Destroyer,Distance Driver,,,,," )';
+  const header = '# navn;type;speed;glide;turn;fade;farge — speed/glide/turn/fade og farge er valgfrie, la stå tomt (f.eks. "Innova Destroyer;Distance Driver;;;;;" ). Semikolon brukes som skilletegn slik at komma kan brukes som desimaltegn (f.eks. 4,5).';
   const lines = discs.map(d => [
     d.name, d.type,
     d.speed ?? '', d.glide ?? '', d.turn ?? '', d.fade ?? '',
     d.color || ''
-  ].join(','));
+  ].join(';'));
   const content = [header, ...lines].join('\n');
   const blob = new Blob([content], {type:'text/plain;charset=utf-8'});
   const url = URL.createObjectURL(blob);
@@ -922,20 +923,25 @@ function handleImportDiscsFile(evt){
   };
   reader.readAsText(file);
 }
+function parseFlightNum(raw){
+  if(!raw) return undefined;
+  const n = parseFloat(raw.replace(',', '.')); // tillat komma som desimaltegn (f.eks. "4,5")
+  return isNaN(n) ? undefined : n;
+}
 function importDiscsFromText(text){
   const lines = text.split(/\r?\n/);
   let added = 0, updated = 0, skipped = 0, colorIdx = 0;
   lines.forEach(line=>{
     const trimmed = line.trim();
     if(!trimmed || trimmed.startsWith('#')) return;
-    const parts = trimmed.split(',').map(p=>p.trim());
+    const parts = trimmed.split(';').map(p=>p.trim());
     const [name, typeRaw, speedRaw, glideRaw, turnRaw, fadeRaw, colorRaw] = parts;
     if(!name || !typeRaw){ skipped++; return; }
     const type = normalizeDiscType(typeRaw);
-    const speed = speedRaw ? parseFloat(speedRaw) : undefined;
-    const glide = glideRaw ? parseFloat(glideRaw) : undefined;
-    const turn = turnRaw ? parseFloat(turnRaw) : undefined;
-    const fade = fadeRaw ? parseFloat(fadeRaw) : undefined;
+    const speed = parseFlightNum(speedRaw);
+    const glide = parseFlightNum(glideRaw);
+    const turn = parseFlightNum(turnRaw);
+    const fade = parseFlightNum(fadeRaw);
     let color = colorRaw || '';
     if(color && !color.startsWith('#')) color = '#' + color;
     if(!/^#[0-9A-Fa-f]{6}$/.test(color)){
@@ -963,7 +969,7 @@ function renderRoundList(){
   discs.forEach(d=>{
     const on = selectedForRound.includes(d.id);
     const el = document.createElement('div');
-    el.className = 'disc-card';
+    el.className = 'disc-card clickable';
     el.innerHTML = `
       <div class="disc-swatch" style="background:${d.color}"></div>
       <div class="disc-info">
@@ -973,7 +979,7 @@ function renderRoundList(){
       <div class="disc-check ${on?'on':''}" data-id="${d.id}">
         <svg viewBox="0 0 24 24" fill="none" stroke="#1A1006" stroke-width="3"><path d="M5 12l5 5 9-9"/></svg>
       </div>`;
-    el.querySelector('.disc-check').onclick = ()=>{
+    el.onclick = ()=>{
       const idx = selectedForRound.indexOf(d.id);
       if(idx>-1) selectedForRound.splice(idx,1); else selectedForRound.push(d.id);
       renderRoundList();
