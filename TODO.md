@@ -21,3 +21,10 @@ Ny "Alle runder"-visning (nås fra Historikk-fanen) med slett-knapp + bekreftels
 - ✓ Lokalt git-repo initialisert.
 - ✓ GitHub-repo opprettet og pushet, gjort offentlig (bruker bekreftet — ingen hemmeligheter i koden): https://github.com/lg2244-cpu/DGFW---Disc-Golf-Field-Work
 - ✓ GitHub Pages aktivert og live: **https://lg2244-cpu.github.io/DGFW---Disc-Golf-Field-Work/**. Oppdateres automatisk ved push til `master`.
+
+## 5. Fargedesign for sollys-lesbarhet — ferdig ✓
+Hele appen byttet fra mørkt til lyst, høykontrast-tema, siden appen alltid brukes utendørs i felt (aldri innendørs) — samme prinsipp som turgps-er/sportsklokker.
+- Bakgrunn/kort: lys kremhvit (`--chalk`/`--chalk-dim`), mørk skoggrønn ink-tekst (`--forest-dark`/`--forest`) som primærfarge for all lesetekst.
+- Aksentfargene oransje og gull fikk egne mørkere "ink"-varianter (`--disc-orange-ink`, `--turf-yellow-ink`) til bruk som *tekst* (stat-tall, overskrifter, chips), mens de opprinnelige lyse variantene beholdes til *fyll* (knapper, prikker, progresjon) — nødvendig fordi samme lyse farge ikke har nok kontrast både som bakgrunnsfarge-med-mørk-tekst og som tekstfarge-på-lys-bakgrunn.
+- Korridor-/bane-visualiseringen (kast-registrering, oversikt) beholdt bevisst mørkegrønn bakgrunn som et tematisk "fairway"-panel — den leses via form/posisjon, ikke finskrift, så den trenger ikke være lys.
+- **Viktig funn:** `service-worker.js` cachet gammel `index.html` uten at endringer noensinne ble hentet på nytt, siden `CACHE_NAME` aldri endret seg (service worker-skriptet så uendret ut for nettleseren → ingen oppdatering ble trigget). Fikset ved å bumpe `CACHE_NAME` til `kastlinje-v2`. **Husk å bumpe `CACHE_NAME` ved hver fremtidig endring i cachede filer**, ellers ser ikke brukere som allerede har besøkt siden noen oppdateringer.
