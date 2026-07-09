@@ -1,0 +1,1278 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kastlinje – disc golf feltmåling</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --forest-dark:#132A21;
+    --forest:#1F4433;
+    --fairway:#2D5F4C;
+    --chalk:#F4F1E6;
+    --chalk-dim:#D8D3C2;
+    --disc-orange:#FF6A39;
+    --turf-yellow:#D8C25A;
+    --slate:#7C8A80;
+    --line:rgba(244,241,230,0.14);
+    --radius:18px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(circle at 20% 10%, rgba(216,194,90,0.08), transparent 40%),
+      repeating-linear-gradient(0deg, rgba(244,241,230,0.035) 0px, rgba(244,241,230,0.035) 1px, transparent 1px, transparent 64px),
+      repeating-linear-gradient(90deg, rgba(244,241,230,0.035) 0px, rgba(244,241,230,0.035) 1px, transparent 1px, transparent 64px),
+      var(--forest-dark);
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:'Manrope',sans-serif;
+    color:var(--chalk);
+    padding:32px 16px;
+  }
+  .credit{
+    position:fixed; top:14px; left:50%; transform:translateX(-50%);
+    font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--slate);
+    text-align:center;
+  }
+  .phone{
+    width:390px;
+    max-width:100%;
+    height:840px;
+    background:var(--forest);
+    border-radius:44px;
+    border:10px solid #0D1F17;
+    box-shadow:0 40px 80px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(244,241,230,0.05);
+    position:relative;
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+  }
+  .notch{
+    position:absolute; top:0; left:50%; transform:translateX(-50%);
+    width:120px; height:24px; background:#0D1F17; border-radius:0 0 16px 16px; z-index:50;
+  }
+  header.appbar{
+    padding:38px 22px 14px;
+    display:flex; flex-direction:column; gap:2px;
+    border-bottom:1px solid var(--line);
+    flex-shrink:0;
+  }
+  .wordmark{
+    font-family:'Space Mono',monospace;
+    font-weight:700;
+    font-size:19px;
+    letter-spacing:0.04em;
+    display:flex; align-items:center; gap:8px;
+  }
+  .wordmark .dot{width:8px;height:8px;border-radius:50%;background:var(--disc-orange);display:inline-block;}
+  .tagline{font-size:11.5px;color:var(--slate); letter-spacing:.03em;}
+  .storage-note{font-size:10px; color:var(--turf-yellow); margin-top:2px; display:none;}
+
+  .screens{flex:1; position:relative; overflow:hidden;}
+  .screen{
+    position:absolute; inset:0;
+    padding:18px 20px 20px;
+    overflow-y:auto;
+    display:none;
+    animation:fade .25s ease;
+  }
+  .screen.active{display:block;}
+  @keyframes fade{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);}}
+
+  h2.screentitle{font-size:13px; text-transform:uppercase; letter-spacing:.12em; color:var(--turf-yellow); margin:4px 0 14px; font-weight:700;}
+
+  /* --- Bag / register / history rows --- */
+  .disc-card{
+    background:rgba(244,241,230,0.05);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:14px 16px;
+    display:flex; align-items:center; gap:12px;
+    margin-bottom:10px;
+    cursor:default;
+  }
+  .disc-card.clickable{cursor:pointer;}
+  .disc-card.clickable:active{background:rgba(244,241,230,0.09);}
+  .disc-swatch{
+    width:38px; height:38px; border-radius:50%;
+    flex-shrink:0;
+    box-shadow:inset 0 0 0 2px rgba(0,0,0,0.15), 0 2px 6px rgba(0,0,0,0.3);
+  }
+  .disc-info{flex:1;}
+  .disc-name{font-weight:700; font-size:14.5px;}
+  .disc-type{font-size:11.5px; color:var(--slate); text-transform:uppercase; letter-spacing:.06em; margin-top:1px;}
+  .disc-meta{font-size:11px; color:var(--turf-yellow); margin-top:3px;}
+  .disc-check{
+    width:24px;height:24px;border-radius:7px;
+    border:1.5px solid var(--chalk-dim);
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0; cursor:pointer;
+    transition:.15s;
+  }
+  .disc-check.on{background:var(--disc-orange); border-color:var(--disc-orange);}
+  .disc-check svg{width:14px;height:14px; opacity:0; transition:.15s;}
+  .disc-check.on svg{opacity:1;}
+  .chevron{color:var(--slate); flex-shrink:0;}
+
+  .disc-actions{display:flex; gap:6px; flex-shrink:0;}
+  .icon-btn{
+    width:30px; height:30px; border-radius:9px; padding:0;
+    background:rgba(244,241,230,0.06); border:1px solid var(--line);
+    color:var(--chalk-dim); display:flex; align-items:center; justify-content:center;
+    cursor:pointer; flex-shrink:0;
+  }
+  .icon-btn:active{background:rgba(244,241,230,0.12);}
+  .icon-btn.danger{color:#E88A6E;}
+
+  /* --- chip select (vind / kasttype / filtre) --- */
+  .chip-select-row{display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;}
+  .chip-select-btn{
+    padding:7px 13px; border-radius:20px; border:1px solid var(--line);
+    background:rgba(244,241,230,0.05); color:var(--chalk-dim);
+    font-family:'Manrope',sans-serif; font-size:12px; font-weight:600;
+    cursor:pointer; letter-spacing:.02em;
+  }
+  .chip-select-btn.sel{background:var(--disc-orange); border-color:var(--disc-orange); color:#1A1006;}
+  .chip-select-label{font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--slate); margin-top:12px; display:block;}
+
+  .btn{
+    display:block; width:100%; text-align:center;
+    padding:14px 16px; border-radius:14px; border:none;
+    font-family:'Manrope',sans-serif; font-weight:700; font-size:14.5px;
+    cursor:pointer; letter-spacing:.01em;
+  }
+  .btn-primary{background:var(--disc-orange); color:#1A1006;}
+  .btn-primary:active{transform:scale(.98);}
+  .btn-ghost{background:transparent; color:var(--chalk); border:1.5px solid var(--line);}
+  .btn-secondary{background:rgba(216,194,90,0.16); color:var(--turf-yellow); border:1px solid rgba(216,194,90,0.3);}
+  .btn:disabled{opacity:.35; cursor:not-allowed;}
+  .btn-row{display:flex; gap:10px; margin-top:14px;}
+  .btn-small{width:auto; padding:8px 14px; font-size:12.5px; margin-bottom:12px;}
+
+  .fab{
+    position:absolute; bottom:96px; right:20px;
+    width:52px; height:52px; border-radius:50%;
+    background:var(--disc-orange); color:#1A1006;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 8px 20px rgba(255,106,57,0.4);
+    border:none; cursor:pointer; font-size:26px; font-weight:700;
+  }
+
+  /* --- form --- */
+  .field{margin-bottom:14px;}
+  .field label{font-size:11.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--slate); display:block; margin-bottom:6px;}
+  .field input, .field select{
+    width:100%; padding:12px 14px; border-radius:12px;
+    background:rgba(244,241,230,0.06); border:1px solid var(--line);
+    color:var(--chalk); font-family:'Manrope',sans-serif; font-size:14.5px;
+  }
+  .swatch-row{display:flex; gap:10px; margin-top:6px;}
+  .swatch-pick{width:30px;height:30px;border-radius:50%; cursor:pointer; box-shadow:inset 0 0 0 2px rgba(0,0,0,.15);}
+  .swatch-pick.sel{box-shadow:0 0 0 2.5px var(--chalk);}
+
+  .empty-note{font-size:12.5px; color:var(--slate); line-height:1.5; margin-top:6px;}
+
+  /* --- GPS capture screens --- */
+  .gps-hero{
+    background:rgba(244,241,230,0.04);
+    border:1px solid var(--line);
+    border-radius:20px;
+    padding:26px 20px;
+    text-align:center;
+    margin-bottom:18px;
+  }
+  .gps-pin{
+    width:64px;height:64px;margin:0 auto 14px;
+    border-radius:50%;
+    background:radial-gradient(circle, rgba(255,106,57,.22), transparent 70%);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .gps-status{font-size:12.5px; color:var(--slate); min-height:16px; line-height:1.5;}
+  .accuracy-tag{
+    display:inline-block; margin-top:8px; font-family:'Space Mono',monospace;
+    font-size:11.5px; padding:3px 9px; border-radius:20px;
+    background:rgba(216,194,90,0.14); color:var(--turf-yellow);
+  }
+
+  /* --- throw flow --- */
+  .progress-track{display:flex; gap:5px; margin-bottom:16px;}
+  .progress-seg{flex:1; height:4px; border-radius:2px; background:var(--line);}
+  .progress-seg.done{background:var(--disc-orange);}
+  .progress-seg.now{background:var(--turf-yellow);}
+
+  .throw-card{
+    background:rgba(244,241,230,0.05);
+    border:1px solid var(--line);
+    border-radius:20px;
+    padding:20px 18px;
+    text-align:center;
+  }
+  .throw-disc-swatch{
+    width:52px;height:52px;border-radius:50%; margin:0 auto 10px;
+    box-shadow:inset 0 0 0 3px rgba(0,0,0,.15), 0 4px 14px rgba(0,0,0,.35);
+  }
+  .throw-disc-name{font-weight:800; font-size:16.5px;}
+  .throw-disc-type{font-size:11.5px; color:var(--slate); text-transform:uppercase; letter-spacing:.08em; margin-bottom:10px;}
+
+  .corridor-wrap{background:rgba(0,0,0,0.14); border-radius:14px; padding:6px 4px 0; margin:6px 0;}
+  .distance-readout{
+    font-family:'Space Mono',monospace; font-weight:700;
+    font-size:40px; margin:8px 0 0; line-height:1;
+  }
+  .distance-unit{font-size:13px; color:var(--slate); letter-spacing:.06em; margin-bottom:8px;}
+  .lateral-chip{
+    display:inline-block; font-family:'Space Mono',monospace; font-size:12px;
+    padding:5px 12px; border-radius:20px; margin-top:2px; font-weight:700;
+  }
+  .chip-right{background:rgba(255,106,57,0.18); color:var(--disc-orange);}
+  .chip-left{background:rgba(216,194,90,0.18); color:var(--turf-yellow);}
+  .chip-neutral{background:rgba(244,241,230,0.1); color:var(--chalk-dim);}
+
+  /* --- oversikt / historikk --- */
+  .stat-row{display:flex; gap:10px; margin-bottom:16px;}
+  .stat-box{
+    flex:1; background:rgba(244,241,230,0.05); border:1px solid var(--line);
+    border-radius:14px; padding:12px 10px; text-align:center;
+  }
+  .stat-num{font-family:'Space Mono',monospace; font-weight:700; font-size:19px; color:var(--turf-yellow);}
+  .stat-label{font-size:10px; text-transform:uppercase; letter-spacing:.07em; color:var(--slate); margin-top:2px;}
+
+  .result-row{margin-bottom:14px;}
+  .result-top{display:flex; justify-content:space-between; align-items:center; margin-bottom:5px; gap:8px;}
+  .result-name{font-weight:700; font-size:13.5px;}
+  .result-right{display:flex; align-items:center; gap:8px;}
+  .result-dist{font-family:'Space Mono',monospace; font-weight:700; font-size:15px; color:var(--disc-orange);}
+  .result-bar-track{height:10px; border-radius:6px; background:var(--line); overflow:hidden;}
+  .result-bar-fill{height:100%; border-radius:6px;}
+  .mini-chip{font-size:10.5px; font-family:'Space Mono',monospace; padding:2px 8px; border-radius:12px;}
+
+  .chart-bars{display:flex; align-items:flex-end; gap:6px; height:110px; margin:14px 0 6px;}
+  .chart-bar{flex:1; border-radius:6px 6px 2px 2px; min-height:4px;}
+  .history-entry{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:10px 0; border-bottom:1px solid var(--line); font-size:12.5px;
+  }
+  .history-date{color:var(--slate);}
+
+  /* --- bottom nav --- */
+  nav.tabbar{
+    flex-shrink:0; display:flex; border-top:1px solid var(--line);
+    background:rgba(13,31,23,0.6);
+    padding:10px 6px calc(14px + env(safe-area-inset-bottom,0px));
+  }
+  .tab{
+    flex:1; display:flex; flex-direction:column; align-items:center; gap:4px;
+    background:none; border:none; color:var(--slate); font-family:'Manrope',sans-serif;
+    font-size:10px; font-weight:600; letter-spacing:.02em; cursor:pointer;
+  }
+  .tab.active{color:var(--turf-yellow);}
+  .tab svg{width:19px;height:19px;}
+
+  .modal-backdrop{
+    position:absolute; inset:0; background:rgba(10,20,15,0.7);
+    display:none; align-items:flex-end; z-index:60;
+  }
+  .modal-backdrop.open{display:flex;}
+  .modal-sheet{
+    width:100%; background:var(--forest); border-radius:24px 24px 0 0;
+    padding:20px 20px 26px; border-top:1px solid var(--line);
+    animation:slideup .25s ease;
+  }
+  @keyframes slideup{from{transform:translateY(30px); opacity:0;} to{transform:translateY(0); opacity:1;}}
+  .modal-title{font-weight:800; font-size:16px; margin-bottom:14px;}
+
+  ::-webkit-scrollbar{width:0;}
+
+  @media (max-width: 500px){
+    body{padding:0; align-items:stretch; justify-content:stretch;}
+    .phone{width:100%; height:100vh; height:100dvh; border:none; border-radius:0; box-shadow:none;}
+    .notch{display:none;}
+    .credit{display:none;}
+  }
+</style>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1F4433">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+</head>
+<body>
+<div class="credit">Kastlinje — trykk deg gjennom flyten</div>
+
+<div class="phone">
+  <div class="notch"></div>
+  <header class="appbar">
+    <div class="wordmark"><span class="dot"></span>KASTLINJE</div>
+    <div class="tagline">Feltmåling for disc golf</div>
+    <div class="storage-note" id="storage-note">Lagring utilgjengelig — historikk lagres kun i denne økten</div>
+  </header>
+
+  <div class="screens">
+
+    <!-- SCREEN: BAG -->
+    <section class="screen active" id="screen-bag">
+      <h2 class="screentitle">Bag · Diskregister</h2>
+      <div id="disc-list"><p class="empty-note">Laster registeret …</p></div>
+      <p class="empty-note">Dette er diskene dine. Legg til alle diskene du normalt kaster med — du velger blant disse når du starter en ny runde.</p>
+      <button class="fab" onclick="openModal()">+</button>
+    </section>
+
+    <!-- SCREEN: NY RUNDE - velg disker -->
+    <section class="screen" id="screen-round">
+      <h2 class="screentitle">Ny runde · Velg disker</h2>
+      <p class="empty-note" style="margin-bottom:12px;">Velg diskene du skal kaste ut. Rekkefølgen her har ingen betydning — du registrerer dem etterpå i den rekkefølgen du går bort til dem.</p>
+      <div id="round-list"></div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="start-round-btn" onclick="goToStartpoint()" disabled>Start runde →</button>
+      </div>
+    </section>
+
+    <!-- SCREEN: SETT UTGANGSPUNKT -->
+    <section class="screen" id="screen-startpoint">
+      <h2 class="screentitle">1 · Utgangspunkt</h2>
+      <div class="gps-hero">
+        <div class="gps-pin">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#FF6A39" stroke-width="2"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>
+        </div>
+        <div style="font-weight:700; font-size:15px;">Stå på teestedet</div>
+        <div class="gps-status" id="startpoint-status">Trykk for å registrere posisjonen din som utgangspunkt</div>
+        <div id="accuracy-tag-wrap"></div>
+      </div>
+      <button class="btn btn-primary" onclick="captureStartpoint()">Sett utgangspunkt (GPS)</button>
+      <p class="empty-note" style="margin-top:10px;">Fungerer det ikke? Åpne denne siden i en egen nettleserfane (ikke i forhåndsvisning/app-vindu), og trykk "Tillat" når nettleseren spør om posisjon.</p>
+      <button class="btn btn-ghost" style="margin-top:10px;" id="startpoint-next" onclick="goToAimScreen()" disabled>Neste: sikteretning →</button>
+
+      <div style="margin-top:24px;">
+        <div class="field" style="margin-bottom:0;"><label>Vindforhold (valgfritt, gjelder hele runden)</label></div>
+        <span class="chip-select-label" style="margin-top:10px;">Retning</span>
+        <div class="chip-select-row" id="wind-direction-row"></div>
+        <span class="chip-select-label">Styrke</span>
+        <div class="chip-select-row" id="wind-strength-row"></div>
+      </div>
+    </section>
+
+    <!-- SCREEN: SIKTERETNING -->
+    <section class="screen" id="screen-aim">
+      <h2 class="screentitle">2 · Sikteretning</h2>
+      <div class="gps-hero">
+        <div class="gps-pin">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#FF6A39" stroke-width="2"><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/><circle cx="12" cy="12" r="4"/></svg>
+        </div>
+        <div style="font-weight:700; font-size:15px;">Gå i kasteretningen</div>
+        <div class="gps-status" id="aim-status">Gå minst 5–10 meter mot der du sikter (f.eks. mot kurven), og trykk for å registrere retningen.</div>
+        <div id="aim-accuracy-wrap"></div>
+      </div>
+      <button class="btn btn-primary" onclick="captureAim()">Registrer sikteretning (GPS)</button>
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="skipAim()">Hopp over (kun avstand)</button>
+        <button class="btn btn-secondary" id="aim-next" onclick="beginThrowFlow()" disabled>Neste →</button>
+      </div>
+    </section>
+
+    <!-- SCREEN: KAST FLOW -->
+    <section class="screen" id="screen-throw">
+      <h2 class="screentitle">3 · Registrer kast</h2>
+
+      <!-- Velger: hvilken disk står du ved? -->
+      <div id="throw-picker-view">
+        <p class="empty-note" id="throw-progress-note" style="margin-bottom:12px;">0 av 0 registrert</p>
+        <div id="throw-remaining-list"></div>
+        <div id="throw-done-list"></div>
+        <div id="throw-all-done-wrap"></div>
+      </div>
+
+      <!-- Aktiv registrering av valgt disk -->
+      <div id="throw-active-view" style="display:none;">
+        <button class="btn btn-ghost btn-small" onclick="cancelActiveThrow()">← Velg annen disk</button>
+        <div class="throw-card">
+          <div class="throw-disc-swatch" id="throw-swatch"></div>
+          <div class="throw-disc-name" id="throw-name">—</div>
+          <div class="throw-disc-type" id="throw-type">—</div>
+
+          <div class="corridor-wrap" id="throw-corridor"></div>
+
+          <div class="distance-readout" id="throw-distance">–</div>
+          <div class="distance-unit">meter</div>
+          <div id="throw-lateral-wrap"></div>
+
+          <div style="margin-top:14px;">
+            <span class="chip-select-label" style="margin-top:0;">Kasttype (valgfritt)</span>
+            <div class="chip-select-row" id="throw-type-row" style="justify-content:center;"></div>
+          </div>
+        </div>
+        <p class="gps-status" id="throw-status" style="text-align:center; margin-top:14px;">Stå ved disken og trykk registrer</p>
+        <button class="btn btn-primary" style="margin-top:6px;" id="throw-capture-btn" onclick="captureThrow()">Registrer posisjon (GPS)</button>
+        <button class="btn btn-secondary" style="margin-top:10px; display:none;" id="throw-next-btn" onclick="afterThrowContinue()">Fortsett →</button>
+      </div>
+    </section>
+
+    <!-- SCREEN: OVERSIKT (gjeldende runde) -->
+    <section class="screen" id="screen-summary">
+      <h2 class="screentitle">Oversikt · Denne runden</h2>
+      <div class="corridor-wrap" id="summary-corridor" style="margin-bottom:14px;"></div>
+      <div class="stat-row" id="stat-row"></div>
+      <div id="summary-list"></div>
+      <button class="btn btn-primary" style="margin-top:8px;" onclick="resetRound()">Ny runde</button>
+    </section>
+
+    <!-- SCREEN: HISTORIKK (per disk, tab) -->
+    <section class="screen" id="screen-history">
+      <h2 class="screentitle">Historikk · Per disk</h2>
+      <div class="btn-row" id="history-links" style="margin-top:0; margin-bottom:6px;">
+        <button class="btn btn-secondary btn-small" style="margin-bottom:0;" onclick="showAllRounds()">Alle runder →</button>
+        <button class="btn btn-secondary btn-small" style="margin-bottom:0;" onclick="showCompareDiscs()">Sammenlign disker →</button>
+      </div>
+      <div id="history-disc-list"></div>
+    </section>
+
+    <!-- SCREEN: DISK-DETALJ -->
+    <section class="screen" id="screen-discdetail">
+      <button class="btn btn-ghost btn-small" onclick="showTab('history')">← Tilbake</button>
+      <h2 class="screentitle" id="detail-disc-title">Disk</h2>
+      <div id="detail-filters" style="margin-bottom:14px;">
+        <span class="chip-select-label" style="margin-top:0;">Filter: vindretning</span>
+        <div class="chip-select-row" id="detail-wind-filter-row"></div>
+        <span class="chip-select-label">Filter: kasttype</span>
+        <div class="chip-select-row" id="detail-throwtype-filter-row"></div>
+      </div>
+      <div class="stat-row" id="detail-stat-row"></div>
+      <div id="detail-extra-stats"></div>
+      <div id="detail-chart"></div>
+      <div id="detail-list"></div>
+    </section>
+
+    <!-- SCREEN: ALLE RUNDER (slett runde) -->
+    <section class="screen" id="screen-allrounds">
+      <button class="btn btn-ghost btn-small" onclick="showTab('history')">← Tilbake</button>
+      <h2 class="screentitle">Historikk · Alle runder</h2>
+      <div id="allrounds-list"></div>
+    </section>
+
+    <!-- SCREEN: SAMMENLIGN DISKER -->
+    <section class="screen" id="screen-comparediscs">
+      <button class="btn btn-ghost btn-small" onclick="showTab('history')">← Tilbake</button>
+      <h2 class="screentitle">Sammenlign disker</h2>
+      <div id="compare-list"></div>
+    </section>
+
+  </div>
+
+  <nav class="tabbar">
+    <button class="tab active" data-tab="bag" onclick="showTab('bag')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg>
+      Bag
+    </button>
+    <button class="tab" data-tab="round" onclick="showTab('round')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      Ny runde
+    </button>
+    <button class="tab" data-tab="summary" onclick="showTab('summary')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V9M12 19V5M20 19v-7"/></svg>
+      Oversikt
+    </button>
+    <button class="tab" data-tab="history" onclick="showTab('history')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+      Historikk
+    </button>
+  </nav>
+
+  <!-- Modal: legg til disk -->
+  <div class="modal-backdrop" id="modal-backdrop">
+    <div class="modal-sheet">
+      <div class="modal-title" id="modal-title-text">Legg til disk</div>
+      <div class="field">
+        <label>Navn</label>
+        <input type="text" id="new-disc-name" placeholder="F.eks. Innova Destroyer">
+      </div>
+      <div class="field">
+        <label>Type</label>
+        <select id="new-disc-type">
+          <option value="Driver">Driver</option>
+          <option value="Midrange">Midrange</option>
+          <option value="Putter">Putter</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Farge</label>
+        <div class="swatch-row" id="swatch-row"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="closeModal()">Avbryt</button>
+        <button class="btn btn-primary" onclick="saveDisc()">Lagre disk</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ---------- STATE ----------
+const COLORS = ["#FF6A39","#D8C25A","#5FA88A","#E6E1D2","#7C8AC8","#C25C5C"];
+const WIND_DIRECTIONS = [{key:'med',label:'Medvind'},{key:'mot',label:'Motvind'},{key:'side',label:'Sidevind'}];
+const WIND_STRENGTHS = [{key:'svak',label:'Svak'},{key:'middels',label:'Middels'},{key:'sterk',label:'Sterk'}];
+const THROW_TYPES = [{key:'hyzer',label:'Hyzer'},{key:'anhyzer',label:'Anhyzer'},{key:'flatt',label:'Flatt'}];
+const WIND_DIR_LABELS = {med:'medvind', mot:'motvind', side:'sidevind'};
+let discs = [
+  {id:1, name:"Innova Destroyer", type:"Driver", color:"#FF6A39"},
+  {id:2, name:"Discmania PD", type:"Midrange", color:"#D8C25A"},
+  {id:3, name:"Latitude 64 Ballista", type:"Putter", color:"#E6E1D2"},
+];
+let nextId = 4;
+let selectedForRound = [];
+let startpoint = null;
+let aimVector = null; // normalized {x,y} in local east/north meters, or null if skipped
+let throwQueue = []; // sett av discId'er valgt for runden (ingen fast rekkefølge)
+let currentDiscId = null; // disken som er valgt for registrering akkurat nå
+let results = []; // {discId, distance, lateral, along}
+let rounds = []; // persisted history: [{id,date,aimUsed,throws:[{discId,distance,lateral,along}]}]
+let roundSaved = false;
+let pickedColor = COLORS[0];
+let storageOk = true;
+let editingDiscId = null; // null = "legg til"-modus i disk-modalen, ellers id på disken som redigeres
+let windDirection = null; // 'med'|'mot'|'side'|null, satt én gang per runde
+let windStrength = null; // 'svak'|'middels'|'sterk'|null
+let currentThrowType = null; // 'hyzer'|'anhyzer'|'flatt'|null, satt per kast
+let detailDiscId = null; // disken som vises i screen-discdetail akkurat nå
+let detailWindFilter = null; // filter i disk-detalj: 'med'|'mot'|'side'|null
+let detailThrowTypeFilter = null; // filter i disk-detalj: 'hyzer'|'anhyzer'|'flatt'|null
+
+// ---------- GEO HELPERS ----------
+function toLocalXY(originLat, originLon, lat, lon){
+  const latRad = originLat*Math.PI/180;
+  const x = (lon-originLon)*Math.cos(latRad)*111320; // east meters
+  const y = (lat-originLat)*110540; // north meters
+  return {x,y};
+}
+function getPosition(){
+  return new Promise((resolve, reject)=>{
+    if(!window.isSecureContext){ reject({code:0, message:'Denne siden er ikke lastet over HTTPS, så nettleseren tillater ikke posisjonsdeling.'}); return; }
+    if(!navigator.geolocation){ reject({code:0, message:'Geolokasjon støttes ikke i denne nettleseren.'}); return; }
+    navigator.geolocation.getCurrentPosition(
+      pos => resolve(pos.coords),
+      err => reject(err),
+      {enableHighAccuracy:true, timeout:12000, maximumAge:0}
+    );
+  });
+}
+function describeGeoError(e){
+  const code = e && typeof e.code === 'number' ? e.code : null;
+  let base;
+  if(code === 1) base = 'Posisjonstilgang ble avslått for denne siden.';
+  else if(code === 2) base = 'Posisjon ikke tilgjengelig akkurat nå (svak GPS/nettverk-dekning).';
+  else if(code === 3) base = 'Tidsavbrudd — fikk ikke posisjon innen 12 sekunder.';
+  else base = (e && e.message) ? e.message : 'Ukjent posisjonsfeil.';
+  return base + ' Åpner du denne siden inni en forhåndsvisning i Claude, kan nettleseren blokkere posisjonsdeling helt — trykk "Åpne i ny fane"/last ned filen og åpne den direkte i nettleseren, og trykk "Tillat" når den spør om posisjon.';
+}
+function formatDate(iso){
+  try{
+    return new Date(iso).toLocaleDateString('no-NO', {day:'2-digit', month:'2-digit', year:'2-digit'});
+  }catch(e){ return iso; }
+}
+function stddev(nums){
+  if(nums.length===0) return 0;
+  const mean = nums.reduce((a,b)=>a+b,0)/nums.length;
+  const variance = nums.reduce((a,b)=>a+(b-mean)*(b-mean),0)/nums.length;
+  return Math.sqrt(variance);
+}
+
+// ---------- CHIP SELECT (vind / kasttype / filtre) ----------
+function renderChipRow(containerId, options, currentValue, onSelect){
+  const row = document.getElementById(containerId);
+  row.innerHTML = '';
+  options.forEach(opt=>{
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'chip-select-btn' + (currentValue===opt.key ? ' sel' : '');
+    btn.textContent = opt.label;
+    btn.onclick = ()=> onSelect(currentValue===opt.key ? null : opt.key);
+    row.appendChild(btn);
+  });
+}
+function renderWindChips(){
+  renderChipRow('wind-direction-row', WIND_DIRECTIONS, windDirection, (v)=>{ windDirection=v; renderWindChips(); });
+  renderChipRow('wind-strength-row', WIND_STRENGTHS, windStrength, (v)=>{ windStrength=v; renderWindChips(); });
+}
+function renderThrowTypeChips(){
+  renderChipRow('throw-type-row', THROW_TYPES, currentThrowType, (v)=>{ currentThrowType=v; renderThrowTypeChips(); });
+}
+
+// ---------- PERSISTENT STORAGE (localStorage – fungerer frittstående, uten Claude) ----------
+const Store = {
+  get(key){
+    try{
+      const v = localStorage.getItem('kastlinje:'+key);
+      return v===null ? null : {value:v};
+    }catch(e){ return null; }
+  },
+  set(key, value){
+    try{
+      localStorage.setItem('kastlinje:'+key, value);
+      return {key,value};
+    }catch(e){ return null; }
+  }
+};
+function persistDiscs(){
+  const res = Store.set('discs', JSON.stringify(discs));
+  if(!res){ storageOk = false; document.getElementById('storage-note').style.display='block'; }
+}
+function persistRounds(){
+  const res = Store.set('rounds', JSON.stringify(rounds));
+  if(!res){ storageOk = false; document.getElementById('storage-note').style.display='block'; }
+}
+function initApp(){
+  const discsRes = Store.get('discs');
+  if(discsRes && discsRes.value){
+    try{
+      discs = JSON.parse(discsRes.value);
+      nextId = discs.length ? Math.max(...discs.map(d=>d.id))+1 : 1;
+    }catch(e){ persistDiscs(); }
+  }else{
+    persistDiscs();
+  }
+  const roundsRes = Store.get('rounds');
+  if(roundsRes && roundsRes.value){
+    try{ rounds = JSON.parse(roundsRes.value); }catch(e){ /* korrupt data, starter tomt */ }
+  }
+
+  if(!storageOk){ document.getElementById('storage-note').style.display='block'; }
+  renderBag();
+  renderHistoryList();
+}
+
+// ---------- TAB NAV ----------
+function showTab(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  if(name==='bag'){ document.getElementById('screen-bag').classList.add('active'); }
+  if(name==='round'){ renderRoundList(); document.getElementById('screen-round').classList.add('active'); }
+  if(name==='summary'){ renderSummary(); document.getElementById('screen-summary').classList.add('active'); }
+  if(name==='history'){ renderHistoryList(); document.getElementById('screen-history').classList.add('active'); }
+  const tabBtn = document.querySelector('.tab[data-tab="'+name+'"]');
+  if(tabBtn) tabBtn.classList.add('active');
+}
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ---------- BAG ----------
+function renderBag(){
+  const wrap = document.getElementById('disc-list');
+  wrap.innerHTML = '';
+  discs.forEach(d=>{
+    const el = document.createElement('div');
+    el.className = 'disc-card';
+    el.innerHTML = `
+      <div class="disc-swatch" style="background:${d.color}"></div>
+      <div class="disc-info">
+        <div class="disc-name">${d.name}</div>
+        <div class="disc-type">${d.type}</div>
+      </div>
+      <div class="disc-actions">
+        <button class="icon-btn" aria-label="Rediger ${d.name}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>
+        <button class="icon-btn danger" aria-label="Slett ${d.name}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16z"/></svg></button>
+      </div>`;
+    el.querySelectorAll('.icon-btn')[0].onclick = ()=>openModal(d.id);
+    el.querySelectorAll('.icon-btn')[1].onclick = ()=>deleteDisc(d.id);
+    wrap.appendChild(el);
+  });
+}
+function openModal(discId){
+  editingDiscId = discId || null;
+  const disc = editingDiscId ? discs.find(d=>d.id===editingDiscId) : null;
+  document.getElementById('modal-title-text').textContent = disc ? 'Rediger disk' : 'Legg til disk';
+  document.getElementById('new-disc-name').value = disc ? disc.name : '';
+  document.getElementById('new-disc-type').value = disc ? disc.type : 'Driver';
+  pickedColor = disc ? disc.color : COLORS[0];
+  const row = document.getElementById('swatch-row');
+  row.innerHTML = '';
+  COLORS.forEach((c)=>{
+    const s = document.createElement('div');
+    s.className = 'swatch-pick' + (c===pickedColor?' sel':'');
+    s.style.background = c;
+    s.onclick = ()=>{ pickedColor = c; document.querySelectorAll('.swatch-pick').forEach(x=>x.classList.remove('sel')); s.classList.add('sel'); };
+    row.appendChild(s);
+  });
+  document.getElementById('modal-backdrop').classList.add('open');
+}
+function closeModal(){ document.getElementById('modal-backdrop').classList.remove('open'); editingDiscId = null; }
+function saveDisc(){
+  const name = document.getElementById('new-disc-name').value.trim();
+  if(!name){ alert('Gi disken et navn'); return; }
+  const type = document.getElementById('new-disc-type').value;
+  if(editingDiscId){
+    const disc = discs.find(d=>d.id===editingDiscId);
+    disc.name = name; disc.type = type; disc.color = pickedColor;
+  }else{
+    discs.push({id:nextId++, name, type, color:pickedColor});
+  }
+  renderBag();
+  persistDiscs();
+  closeModal();
+}
+function deleteDisc(discId){
+  const disc = discs.find(d=>d.id===discId);
+  if(!disc) return;
+  const ok = confirm('Slette «' + disc.name + '»? Tidligere registrerte kast med denne disken beholdes i lagringen, men disken forsvinner fra bag og historikk.');
+  if(!ok) return;
+  discs = discs.filter(d=>d.id!==discId);
+  const idx = selectedForRound.indexOf(discId);
+  if(idx>-1) selectedForRound.splice(idx,1);
+  persistDiscs();
+  renderBag();
+}
+
+// ---------- NY RUNDE ----------
+function renderRoundList(){
+  const wrap = document.getElementById('round-list');
+  wrap.innerHTML = '';
+  discs.forEach(d=>{
+    const on = selectedForRound.includes(d.id);
+    const el = document.createElement('div');
+    el.className = 'disc-card';
+    el.innerHTML = `
+      <div class="disc-swatch" style="background:${d.color}"></div>
+      <div class="disc-info">
+        <div class="disc-name">${d.name}</div>
+        <div class="disc-type">${d.type}</div>
+      </div>
+      <div class="disc-check ${on?'on':''}" data-id="${d.id}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#1A1006" stroke-width="3"><path d="M5 12l5 5 9-9"/></svg>
+      </div>`;
+    el.querySelector('.disc-check').onclick = ()=>{
+      const idx = selectedForRound.indexOf(d.id);
+      if(idx>-1) selectedForRound.splice(idx,1); else selectedForRound.push(d.id);
+      renderRoundList();
+    };
+    wrap.appendChild(el);
+  });
+  document.getElementById('start-round-btn').disabled = selectedForRound.length===0;
+}
+function goToStartpoint(){
+  throwQueue = selectedForRound.slice();
+  currentDiscId = null;
+  results = [];
+  startpoint = null;
+  aimVector = null;
+  roundSaved = false;
+  windDirection = null;
+  windStrength = null;
+  document.getElementById('startpoint-status').textContent = 'Trykk for å registrere posisjonen din som utgangspunkt';
+  document.getElementById('accuracy-tag-wrap').innerHTML = '';
+  document.getElementById('startpoint-next').disabled = true;
+  renderWindChips();
+  showScreen('screen-startpoint');
+}
+
+// ---------- UTGANGSPUNKT ----------
+async function captureStartpoint(){
+  document.getElementById('startpoint-status').textContent = 'Henter posisjon …';
+  try{
+    const coords = await getPosition();
+    startpoint = {lat:coords.latitude, lon:coords.longitude};
+    document.getElementById('startpoint-status').textContent = 'Utgangspunkt registrert ✓';
+    document.getElementById('accuracy-tag-wrap').innerHTML =
+      `<div class="accuracy-tag">±${Math.round(coords.accuracy)} m nøyaktighet</div>`;
+    document.getElementById('startpoint-next').disabled = false;
+  }catch(e){
+    document.getElementById('startpoint-status').textContent = describeGeoError(e);
+  }
+}
+
+// ---------- SIKTERETNING ----------
+function goToAimScreen(){
+  document.getElementById('aim-status').textContent = 'Gå minst 5–10 meter mot der du sikter (f.eks. mot kurven), og trykk for å registrere retningen.';
+  document.getElementById('aim-accuracy-wrap').innerHTML = '';
+  document.getElementById('aim-next').disabled = true;
+  showScreen('screen-aim');
+}
+async function captureAim(){
+  if(!startpoint){ alert('Sett utgangspunkt først.'); return; }
+  document.getElementById('aim-status').textContent = 'Henter posisjon …';
+  try{
+    const coords = await getPosition();
+    const local = toLocalXY(startpoint.lat, startpoint.lon, coords.latitude, coords.longitude);
+    const mag = Math.hypot(local.x, local.y);
+    if(mag < 2){
+      document.getElementById('aim-status').textContent = 'For kort avstand (' + mag.toFixed(1) + ' m) — gå litt lenger i kasteretningen og prøv igjen.';
+      return;
+    }
+    aimVector = {x:local.x/mag, y:local.y/mag};
+    document.getElementById('aim-status').textContent = 'Sikteretning registrert ✓ (' + mag.toFixed(1) + ' m målelinje)';
+    document.getElementById('aim-accuracy-wrap').innerHTML =
+      `<div class="accuracy-tag">±${Math.round(coords.accuracy)} m GPS-nøyaktighet</div>`;
+    document.getElementById('aim-next').disabled = false;
+  }catch(e){
+    document.getElementById('aim-status').textContent = describeGeoError(e);
+  }
+}
+function skipAim(){
+  aimVector = null;
+  beginThrowFlow();
+}
+
+// ---------- KAST-FLOW (fri rekkefølge: du velger hvilken disk du står ved) ----------
+function beginThrowFlow(){
+  currentDiscId = null;
+  showThrowPickerView();
+  showScreen('screen-throw');
+}
+function showThrowPickerView(){
+  document.getElementById('throw-active-view').style.display = 'none';
+  document.getElementById('throw-picker-view').style.display = 'block';
+  renderThrowPicker();
+}
+function renderThrowPicker(){
+  const registeredIds = results.map(r=>r.discId);
+  const remaining = throwQueue.filter(id=>!registeredIds.includes(id));
+  document.getElementById('throw-progress-note').textContent = results.length + ' av ' + throwQueue.length + ' registrert';
+
+  const remainingWrap = document.getElementById('throw-remaining-list');
+  if(remaining.length===0){
+    remainingWrap.innerHTML = '';
+  }else{
+    remainingWrap.innerHTML = '<p class="empty-note" style="margin-bottom:8px;">Trykk på disken du står ved:</p>';
+    remaining.forEach(id=>{
+      const disc = discs.find(d=>d.id===id);
+      const el = document.createElement('div');
+      el.className = 'disc-card clickable';
+      el.onclick = ()=>selectDiscToRegister(id);
+      el.innerHTML = `
+        <div class="disc-swatch" style="background:${disc.color}"></div>
+        <div class="disc-info">
+          <div class="disc-name">${disc.name}</div>
+          <div class="disc-type">${disc.type}</div>
+        </div>
+        <div class="chevron"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></div>`;
+      remainingWrap.appendChild(el);
+    });
+  }
+
+  const doneWrap = document.getElementById('throw-done-list');
+  const doneResults = results.slice();
+  if(doneResults.length===0){
+    doneWrap.innerHTML = '';
+  }else{
+    doneWrap.innerHTML = '<p class="empty-note" style="margin:14px 0 8px;">Registrert (trykk for å måle på nytt):</p>';
+    doneResults.forEach(r=>{
+      const disc = discs.find(d=>d.id===r.discId);
+      const el = document.createElement('div');
+      el.className = 'disc-card clickable';
+      el.style.opacity = '0.75';
+      el.onclick = ()=>selectDiscToRegister(r.discId);
+      el.innerHTML = `
+        <div class="disc-swatch" style="background:${disc.color}"></div>
+        <div class="disc-info">
+          <div class="disc-name">${disc.name}</div>
+          <div class="disc-meta">✓ ${r.distance.toFixed(1)} m</div>
+        </div>`;
+      doneWrap.appendChild(el);
+    });
+  }
+
+  const allDoneWrap = document.getElementById('throw-all-done-wrap');
+  allDoneWrap.innerHTML = remaining.length===0
+    ? '<button class="btn btn-primary" style="margin-top:6px;" onclick="showTab(\'summary\')">Alle disker registrert · Se oversikt →</button>'
+    : '';
+}
+function selectDiscToRegister(discId){
+  currentDiscId = discId;
+  const disc = discs.find(d=>d.id===discId);
+  document.getElementById('throw-swatch').style.background = disc.color;
+  document.getElementById('throw-name').textContent = disc.name;
+  document.getElementById('throw-type').textContent = disc.type;
+  document.getElementById('throw-distance').textContent = '–';
+  document.getElementById('throw-lateral-wrap').innerHTML = '';
+  document.getElementById('throw-corridor').innerHTML = buildCorridorSVG([]);
+  document.getElementById('throw-status').textContent = 'Stå ved disken og trykk registrer';
+  document.getElementById('throw-capture-btn').style.display = 'block';
+  document.getElementById('throw-capture-btn').disabled = false;
+  document.getElementById('throw-next-btn').style.display = 'none';
+  document.getElementById('throw-picker-view').style.display = 'none';
+  document.getElementById('throw-active-view').style.display = 'block';
+  const existing = results.find(r=>r.discId===discId);
+  currentThrowType = existing ? (existing.throwType || null) : null;
+  renderThrowTypeChips();
+}
+function cancelActiveThrow(){
+  currentDiscId = null;
+  showThrowPickerView();
+}
+async function captureThrow(){
+  if(!startpoint){ alert('Utgangspunkt mangler.'); return; }
+  if(!currentDiscId){ alert('Ingen disk valgt.'); return; }
+  document.getElementById('throw-status').textContent = 'Henter posisjon …';
+  document.getElementById('throw-capture-btn').disabled = true;
+  try{
+    const coords = await getPosition();
+    const local = toLocalXY(startpoint.lat, startpoint.lon, coords.latitude, coords.longitude);
+    const distance = Math.hypot(local.x, local.y);
+    let lateral = null, along = distance;
+    if(aimVector){
+      along = local.x*aimVector.x + local.y*aimVector.y;
+      lateral = local.x*aimVector.y - local.y*aimVector.x;
+    }
+    const disc = discs.find(d=>d.id===currentDiscId);
+    // fjern evt. tidligere måling av samme disk (re-registrering overskriver)
+    results = results.filter(r=>r.discId!==currentDiscId);
+    results.push({discId:currentDiscId, distance, lateral, along, throwType:currentThrowType});
+
+    document.getElementById('throw-distance').textContent = distance.toFixed(1);
+    document.getElementById('throw-corridor').innerHTML = buildCorridorSVG([{x:lateral||0, y:along, color:disc.color}]);
+
+    if(lateral!==null){
+      const absLat = Math.abs(lateral);
+      let chipClass = 'chip-neutral', label = 'Rett på linja';
+      if(absLat >= 0.5){
+        chipClass = lateral>0 ? 'chip-right' : 'chip-left';
+        label = absLat.toFixed(1) + ' m til ' + (lateral>0 ? 'høyre' : 'venstre');
+      }
+      document.getElementById('throw-lateral-wrap').innerHTML = `<span class="lateral-chip ${chipClass}">${label}</span>`;
+    }else{
+      document.getElementById('throw-lateral-wrap').innerHTML = '';
+    }
+
+    document.getElementById('throw-status').textContent = 'Registrert ✓ (±' + Math.round(coords.accuracy) + ' m GPS-nøyaktighet)';
+    document.getElementById('throw-capture-btn').style.display = 'none';
+    document.getElementById('throw-next-btn').style.display = 'block';
+  }catch(e){
+    document.getElementById('throw-status').textContent = describeGeoError(e);
+    document.getElementById('throw-capture-btn').disabled = false;
+  }
+}
+function afterThrowContinue(){
+  currentDiscId = null;
+  showThrowPickerView();
+}
+
+// ---------- CORRIDOR SVG (delt visualisering) ----------
+function buildCorridorSVG(points){
+  const w=220, h=230;
+  const maxAlong = Math.max(60, ...points.map(p=>p.y||0));
+  const maxLat = Math.max(20, ...points.map(p=>Math.abs(p.x||0)));
+  const toPx = (p)=>{
+    const px = w/2 + (p.x/maxLat)*(w/2-24);
+    const py = h-18 - (Math.max(0,p.y)/maxAlong)*(h-36);
+    return {px, py};
+  };
+  const dots = points.map(p=>{
+    const {px,py} = toPx(p);
+    return `<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="7" fill="${p.color}" stroke="#132A21" stroke-width="2"/>`;
+  }).join('');
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="180" style="display:block;">
+    <line x1="${w/2}" y1="14" x2="${w/2}" y2="${h-18}" stroke="rgba(244,241,230,0.18)" stroke-width="1.5" stroke-dasharray="4 5"/>
+    <circle cx="${w/2}" cy="${h-18}" r="6" fill="none" stroke="#D8C25A" stroke-width="2"/>
+    ${dots}
+  </svg>`;
+}
+
+// ---------- OVERSIKT ----------
+function maybeSaveRound(){
+  if(roundSaved || results.length===0) return;
+  rounds.unshift({
+    id: Date.now(),
+    date: new Date().toISOString(),
+    aimUsed: !!aimVector,
+    wind: {direction:windDirection, strength:windStrength},
+    throws: results.map(r=>({discId:r.discId, distance:r.distance, lateral:r.lateral, along:r.along, throwType:r.throwType||null}))
+  });
+  roundSaved = true;
+  persistRounds();
+}
+function renderSummary(){
+  maybeSaveRound();
+  const sorted = results.slice().sort((a,b)=>b.distance-a.distance);
+  const distances = results.map(r=>r.distance);
+  const longest = distances.length ? Math.max(...distances) : 0;
+  const shortest = distances.length ? Math.min(...distances) : 0;
+  const avg = distances.length ? distances.reduce((a,b)=>a+b,0)/distances.length : 0;
+
+  const corridorPoints = results.map(r=>{
+    const disc = discs.find(d=>d.id===r.discId);
+    return {x: r.lateral||0, y: r.along, color: disc.color};
+  });
+  document.getElementById('summary-corridor').innerHTML = buildCorridorSVG(corridorPoints);
+
+  document.getElementById('stat-row').innerHTML = `
+    <div class="stat-box"><div class="stat-num">${longest.toFixed(0)}</div><div class="stat-label">Lengst</div></div>
+    <div class="stat-box"><div class="stat-num">${avg.toFixed(0)}</div><div class="stat-label">Snitt</div></div>
+    <div class="stat-box"><div class="stat-num">${shortest.toFixed(0)}</div><div class="stat-label">Kortest</div></div>
+  `;
+
+  const wrap = document.getElementById('summary-list');
+  if(sorted.length===0){
+    wrap.innerHTML = '<p class="empty-note">Ingen kast registrert ennå. Start en ny runde fra fanen "Ny runde".</p>';
+    return;
+  }
+  wrap.innerHTML = '';
+  sorted.forEach(r=>{
+    const disc = discs.find(d=>d.id===r.discId);
+    const pct = longest>0 ? (r.distance/longest)*100 : 0;
+    let chip = '';
+    if(r.lateral!==null){
+      const absLat = Math.abs(r.lateral);
+      const cls = absLat<0.5 ? 'chip-neutral' : (r.lateral>0 ? 'chip-right' : 'chip-left');
+      const txt = absLat<0.5 ? 'på linja' : absLat.toFixed(1)+'m '+(r.lateral>0?'H':'V');
+      chip = `<span class="mini-chip lateral-chip ${cls}">${txt}</span>`;
+    }
+    const row = document.createElement('div');
+    row.className = 'result-row';
+    row.innerHTML = `
+      <div class="result-top">
+        <div class="result-name">${disc.name}</div>
+        <div class="result-right">${chip}<div class="result-dist">${r.distance.toFixed(1)} m</div></div>
+      </div>
+      <div class="result-bar-track"><div class="result-bar-fill" style="width:${pct}%; background:linear-gradient(90deg, ${disc.color}, var(--disc-orange));"></div></div>
+    `;
+    wrap.appendChild(row);
+  });
+}
+function resetRound(){
+  selectedForRound = [];
+  results = [];
+  startpoint = null;
+  aimVector = null;
+  roundSaved = false;
+  showTab('round');
+}
+
+// ---------- HISTORIKK ----------
+function throwsForDisc(discId){
+  const out = [];
+  rounds.forEach(r=>{
+    r.throws.forEach(t=>{
+      if(t.discId===discId) out.push({...t, date:r.date, windDirection: r.wind ? r.wind.direction : null, windStrength: r.wind ? r.wind.strength : null});
+    });
+  });
+  return out;
+}
+function renderHistoryList(){
+  const wrap = document.getElementById('history-disc-list');
+  if(discs.length===0){
+    wrap.innerHTML = '<p class="empty-note">Ingen disker i registeret ennå.</p>';
+    return;
+  }
+  wrap.innerHTML = '';
+  discs.forEach(d=>{
+    const t = throwsForDisc(d.id);
+    const el = document.createElement('div');
+    el.className = 'disc-card clickable';
+    el.onclick = ()=>openDiscDetail(d.id);
+    el.innerHTML = `
+      <div class="disc-swatch" style="background:${d.color}"></div>
+      <div class="disc-info">
+        <div class="disc-name">${d.name}</div>
+        <div class="disc-type">${d.type}</div>
+        <div class="disc-meta">${t.length ? t.length + ' kast registrert' : 'Ingen kast ennå'}</div>
+      </div>
+      <div class="chevron"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></div>
+    `;
+    wrap.appendChild(el);
+  });
+}
+function renderDetailFilters(){
+  renderChipRow('detail-wind-filter-row', WIND_DIRECTIONS, detailWindFilter, (v)=>{ detailWindFilter=v; renderDetailFilters(); renderDiscDetail(); });
+  renderChipRow('detail-throwtype-filter-row', THROW_TYPES, detailThrowTypeFilter, (v)=>{ detailThrowTypeFilter=v; renderDetailFilters(); renderDiscDetail(); });
+}
+function openDiscDetail(discId){
+  detailDiscId = discId;
+  detailWindFilter = null;
+  detailThrowTypeFilter = null;
+  renderDetailFilters();
+  renderDiscDetail();
+  showScreen('screen-discdetail');
+}
+function renderDiscDetail(){
+  const discId = detailDiscId;
+  const disc = discs.find(d=>d.id===discId);
+  document.getElementById('detail-disc-title').textContent = disc.name;
+
+  const allForDisc = throwsForDisc(discId);
+  document.getElementById('detail-filters').style.display = allForDisc.length===0 ? 'none' : 'block';
+
+  if(allForDisc.length===0){
+    document.getElementById('detail-stat-row').innerHTML = '';
+    document.getElementById('detail-extra-stats').innerHTML = '';
+    document.getElementById('detail-chart').innerHTML = '';
+    document.getElementById('detail-list').innerHTML = '<p class="empty-note">Ingen runder registrert for denne disken ennå. Fullfør en runde med denne disken for å se historikk her.</p>';
+    return;
+  }
+
+  const all = allForDisc.filter(t=>
+    (!detailWindFilter || t.windDirection===detailWindFilter) &&
+    (!detailThrowTypeFilter || t.throwType===detailThrowTypeFilter)
+  );
+  if(all.length===0){
+    document.getElementById('detail-stat-row').innerHTML = '';
+    document.getElementById('detail-extra-stats').innerHTML = '';
+    document.getElementById('detail-chart').innerHTML = '';
+    document.getElementById('detail-list').innerHTML = '<p class="empty-note">Ingen kast matcher valgt filter.</p>';
+    return;
+  }
+
+  const distances = all.map(t=>t.distance);
+  const longest = Math.max(...distances);
+  const avg = distances.reduce((a,b)=>a+b,0)/distances.length;
+  const spread = stddev(distances);
+
+  document.getElementById('detail-stat-row').innerHTML = `
+    <div class="stat-box"><div class="stat-num">${all.length}</div><div class="stat-label">Kast</div></div>
+    <div class="stat-box"><div class="stat-num">${longest.toFixed(0)}</div><div class="stat-label">Lengst</div></div>
+    <div class="stat-box"><div class="stat-num">${avg.toFixed(0)}</div><div class="stat-label">Snitt</div></div>
+    <div class="stat-box"><div class="stat-num">±${spread.toFixed(1)}</div><div class="stat-label">Spredning</div></div>
+  `;
+
+  const chronological = all.slice().sort((a,b)=> new Date(a.date) - new Date(b.date));
+
+  let chipsHtml = '';
+  const lateralVals = all.map(t=>t.lateral).filter(v=>v!==null && v!==undefined);
+  if(lateralVals.length>0){
+    const avgLateral = lateralVals.reduce((a,b)=>a+b,0)/lateralVals.length;
+    const absAvg = Math.abs(avgLateral);
+    const cls = absAvg<0.5 ? 'chip-neutral' : (avgLateral>0 ? 'chip-right' : 'chip-left');
+    const txt = absAvg<0.5 ? 'Rett på linja i snitt' : absAvg.toFixed(1) + ' m ' + (avgLateral>0?'høyre':'venstre') + ' i snitt';
+    chipsHtml += `<span class="lateral-chip ${cls}">${txt}</span>`;
+  }
+  if(chronological.length>=6){
+    const last5 = chronological.slice(-5);
+    const earlier = chronological.slice(0, -5);
+    const last5Avg = last5.reduce((a,b)=>a+b.distance,0)/last5.length;
+    const earlierAvg = earlier.reduce((a,b)=>a+b.distance,0)/earlier.length;
+    const delta = last5Avg - earlierAvg;
+    let trendCls = 'chip-neutral', arrow = '→', trendTxt = 'stabil';
+    if(Math.abs(delta) >= 0.5){
+      trendCls = delta>0 ? 'chip-right' : 'chip-left';
+      arrow = delta>0 ? '↑' : '↓';
+      trendTxt = Math.abs(delta).toFixed(1) + ' m ' + (delta>0?'lengre':'kortere') + ' siste 5 kast';
+    }
+    chipsHtml += `<span class="lateral-chip ${trendCls}">${arrow} ${trendTxt}</span>`;
+  }
+  document.getElementById('detail-extra-stats').innerHTML = chipsHtml
+    ? `<div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px;">${chipsHtml}</div>` : '';
+
+  const maxDist = Math.max(...distances);
+  document.getElementById('detail-chart').innerHTML = `<div class="chart-bars">` +
+    chronological.map(t=>{
+      const pct = maxDist>0 ? (t.distance/maxDist*100) : 0;
+      return `<div class="chart-bar" title="${formatDate(t.date)}: ${t.distance.toFixed(1)} m" style="height:${pct}%; background:linear-gradient(180deg, ${disc.color}, var(--disc-orange));"></div>`;
+    }).join('') + `</div>`;
+
+  const newestFirst = all.slice().sort((a,b)=> new Date(b.date) - new Date(a.date));
+  document.getElementById('detail-list').innerHTML = newestFirst.map(t=>{
+    let latTxt = '';
+    if(t.lateral!==null && t.lateral!==undefined){
+      const absLat = Math.abs(t.lateral);
+      latTxt = absLat<0.5 ? ' · på linja' : ' · ' + absLat.toFixed(1) + 'm ' + (t.lateral>0?'H':'V');
+    }
+    const typeOpt = t.throwType ? THROW_TYPES.find(x=>x.key===t.throwType) : null;
+    const typeTxt = typeOpt ? ' · ' + typeOpt.label : '';
+    return `<div class="history-entry"><span class="history-date">${formatDate(t.date)}</span><span>${t.distance.toFixed(1)} m${latTxt}${typeTxt}</span></div>`;
+  }).join('');
+}
+
+// ---------- SAMMENLIGN DISKER ----------
+function showCompareDiscs(){
+  renderCompareDiscs();
+  showScreen('screen-comparediscs');
+}
+function renderCompareDiscs(){
+  const wrap = document.getElementById('compare-list');
+  if(discs.length===0){
+    wrap.innerHTML = '<p class="empty-note">Ingen disker i registeret ennå.</p>';
+    return;
+  }
+  const groupOrder = ['Driver','Midrange','Putter'];
+  let html = '';
+  groupOrder.forEach(type=>{
+    const inGroup = discs.filter(d=>d.type===type);
+    if(inGroup.length===0) return;
+    const withStats = inGroup.map(d=>{
+      const t = throwsForDisc(d.id);
+      const avg = t.length ? t.reduce((a,b)=>a+b.distance,0)/t.length : null;
+      return {disc:d, count:t.length, avg};
+    });
+    withStats.sort((a,b)=>{
+      if(a.avg===null && b.avg===null) return 0;
+      if(a.avg===null) return 1;
+      if(b.avg===null) return -1;
+      return b.avg - a.avg;
+    });
+    const topAvg = withStats.reduce((m,x)=> (x.avg!==null && x.avg>m) ? x.avg : m, 0);
+    html += `<h2 class="screentitle" style="margin-top:18px;">${type}</h2>`;
+    withStats.forEach(x=>{
+      if(x.avg===null){
+        html += `
+          <div class="result-row">
+            <div class="result-top">
+              <div class="result-name">${x.disc.name}</div>
+              <div class="result-right"><span class="empty-note" style="margin:0;">Ingen kast ennå</span></div>
+            </div>
+          </div>`;
+      }else{
+        const pct = topAvg>0 ? (x.avg/topAvg*100) : 0;
+        html += `
+          <div class="result-row">
+            <div class="result-top">
+              <div class="result-name">${x.disc.name}</div>
+              <div class="result-right"><span class="mini-chip" style="color:var(--slate);">${x.count} kast</span><div class="result-dist">${x.avg.toFixed(1)} m</div></div>
+            </div>
+            <div class="result-bar-track"><div class="result-bar-fill" style="width:${pct}%; background:linear-gradient(90deg, ${x.disc.color}, var(--disc-orange));"></div></div>
+          </div>`;
+      }
+    });
+  });
+  wrap.innerHTML = html || '<p class="empty-note">Ingen disker i registeret ennå.</p>';
+}
+
+// ---------- ALLE RUNDER (slett runde) ----------
+function showAllRounds(){
+  renderAllRounds();
+  showScreen('screen-allrounds');
+}
+function renderAllRounds(){
+  const wrap = document.getElementById('allrounds-list');
+  if(rounds.length===0){
+    wrap.innerHTML = '<p class="empty-note">Ingen runder lagret ennå.</p>';
+    return;
+  }
+  wrap.innerHTML = '';
+  rounds.forEach(r=>{
+    let windTxt = '';
+    if(r.wind && (r.wind.direction || r.wind.strength)){
+      const parts = [r.wind.strength || '', r.wind.direction ? WIND_DIR_LABELS[r.wind.direction] : ''].filter(Boolean);
+      windTxt = parts.length ? ' · ' + parts.join(' ') : '';
+    }
+    const el = document.createElement('div');
+    el.className = 'history-entry';
+    el.innerHTML = `
+      <span><span class="history-date">${formatDate(r.date)}</span><span style="margin-left:8px;">${r.throws.length} kast${windTxt}</span></span>
+      <button class="icon-btn danger" aria-label="Slett runde fra ${formatDate(r.date)}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16z"/></svg></button>
+    `;
+    el.querySelector('.icon-btn').onclick = ()=>deleteRound(r.id);
+    wrap.appendChild(el);
+  });
+}
+function deleteRound(roundId){
+  const ok = confirm('Slette denne runden? Dette kan ikke angres.');
+  if(!ok) return;
+  rounds = rounds.filter(r=>r.id!==roundId);
+  persistRounds();
+  renderAllRounds();
+}
+
+// ---------- INIT ----------
+initApp();
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('service-worker.js').catch(()=>{ /* offline-støtte er valgfritt, appen funker uten */ });
+  });
+}
+</script>
+</body>
+</html>
