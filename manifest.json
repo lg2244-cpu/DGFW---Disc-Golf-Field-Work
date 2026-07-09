@@ -1,6 +1,6 @@
 {
-  "name": "Kastlinje – disc golf feltmåling",
-  "short_name": "Kastlinje",
+  "name": "DG Field Work – disc golf feltmåling",
+  "short_name": "DG Field Work",
   "description": "Mål kastelengder og sideavvik i felt, med historikk per disk.",
   "start_url": "./index.html",
   "scope": "./",

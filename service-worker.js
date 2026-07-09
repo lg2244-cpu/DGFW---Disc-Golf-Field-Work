@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kastlinje-v2';
+const CACHE_NAME = 'dgfw-v1';
 const ASSETS = [
   './',
   './index.html',

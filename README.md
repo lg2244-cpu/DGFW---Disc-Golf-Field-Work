@@ -1,6 +1,6 @@
-# Kastlinje – fra prototype til app
+# DG Field Work – fra prototype til app
 
-Dette er en frittstående PWA (Progressive Web App) versjon av Kastlinje-prototypen.
+Dette er en frittstående PWA (Progressive Web App) versjon av DG Field Work-prototypen.
 Den bruker vanlig nettleser-GPS og vanlig `localStorage`, som fungerer normalt
 her siden siden ikke lenger kjører inni en Claude-forhåndsvisning.
 

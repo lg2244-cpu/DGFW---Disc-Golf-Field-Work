@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kastlinje – disc golf feltmåling</title>
+<title>DG Field Work – disc golf feltmåling</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -306,12 +306,12 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 </head>
 <body>
-<div class="credit">Kastlinje — trykk deg gjennom flyten</div>
+<div class="credit">DG Field Work — trykk deg gjennom flyten</div>
 
 <div class="phone">
   <div class="notch"></div>
   <header class="appbar">
-    <div class="wordmark"><span class="dot"></span>KASTLINJE</div>
+    <div class="wordmark"><span class="dot"></span>DG FIELD WORK</div>
     <div class="tagline">Feltmåling for disc golf</div>
     <div class="storage-note" id="storage-note">Lagring utilgjengelig — historikk lagres kun i denne økten</div>
   </header>
@@ -609,17 +609,29 @@ function renderThrowTypeChips(){
 const Store = {
   get(key){
     try{
-      const v = localStorage.getItem('kastlinje:'+key);
+      const v = localStorage.getItem('dgfw:'+key);
       return v===null ? null : {value:v};
     }catch(e){ return null; }
   },
   set(key, value){
     try{
-      localStorage.setItem('kastlinje:'+key, value);
+      localStorage.setItem('dgfw:'+key, value);
       return {key,value};
     }catch(e){ return null; }
   }
 };
+function migrateOldStorageKeys(){
+  // appen het "Kastlinje" tidligere - flytt evt. data lagret under det gamle navnet én gang
+  try{
+    ['discs','rounds'].forEach(key=>{
+      const oldVal = localStorage.getItem('kastlinje:'+key);
+      const newVal = localStorage.getItem('dgfw:'+key);
+      if(oldVal!==null && newVal===null){
+        localStorage.setItem('dgfw:'+key, oldVal);
+      }
+    });
+  }catch(e){ /* localStorage utilgjengelig - ingenting å migrere */ }
+}
 function persistDiscs(){
   const res = Store.set('discs', JSON.stringify(discs));
   if(!res){ storageOk = false; document.getElementById('storage-note').style.display='block'; }
@@ -629,6 +641,7 @@ function persistRounds(){
   if(!res){ storageOk = false; document.getElementById('storage-note').style.display='block'; }
 }
 function initApp(){
+  migrateOldStorageKeys();
   const discsRes = Store.get('discs');
   if(discsRes && discsRes.value){
     try{
