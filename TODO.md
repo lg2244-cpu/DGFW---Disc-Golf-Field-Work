@@ -34,3 +34,12 @@ Appnavnet "Kastlinje" var dårlig, byttet overalt: `<title>`, synlig merkevarete
 
 ## 7. Diskkategorier: 4 nye typer — ferdig ✓
 Byttet ut de 3 gamle kategoriene ("Driver"/"Midrange"/"Putter") med 4 nye: **Distance Driver**, **Fairway Driver**, **Mid-range**, **Putt and Approach**. Endret i type-select i legg til/rediger-disk-modalen, standardverdi for nye disker, seed-diskene, og gruppe-rekkefølgen i "Sammenlign disker". Lagt til `migrateDiscTypes()` (kjører i `initApp()`) som mapper gamle lagrede disker over til nye kategorier én gang (`Driver→Distance Driver`, `Midrange→Mid-range`, `Putter→Putt and Approach`) og persisterer, slik at ingen disker forsvinner fra Sammenlign-grupperingen.
+
+## 8. Bedre GPS-nøyaktighet: watchPosition + nøyaktighets-sperre — ferdig ✓
+Byttet fra `getCurrentPosition` (tar det aller første, ofte upresise fiksen) til `watchPosition` på alle tre målepunkter (utgangspunkt, sikteretning, kast). Ny delt mekanisme `startPositionWatch()`/`stopPositionWatch()`:
+- Strømmer posisjonsoppdateringer og viser live nøyaktighet i statusteksten og et fargekodet nøyaktighetsmerke (gult mens den søker, grønt når den er god).
+- Hovedknappen ("Sett utgangspunkt"/"Registrer sikteretning"/"Registrer posisjon") er deaktivert helt til nøyaktigheten er ≤ `ACCURACY_GOOD_M` (7 m).
+- En "Bruk nåværende posisjon likevel"-knapp dukker opp så snart det finnes ett fiks (uansett kvalitet), som en manuell nødluke slik at man aldri kan bli sittende fast i tett skog der signalet aldri blir bra nok.
+- GPS-pin-ikonet pulserer mens det søkes, roer seg når signalet er godt.
+- `stopPositionWatch()` kalles ved bekreftet måling, ved "← Velg annen disk", ved "Hopp over"-sikteretning, og som sikkerhetsnett øverst i `showTab()` — ingen watch skal fortsette å kjøre i bakgrunnen og tappe batteri etter at brukeren har forlatt måleskjermen.
+- `getCurrentPosition`-baserte `getPosition()`-helperen er fjernet (ubrukt etter omleggingen). `describeGeoError`s timeout-tekst oppdatert til 15 sekunder (matcher nytt `timeout`-alternativ i `watchPosition`).

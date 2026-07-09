@@ -196,12 +196,18 @@
     background:radial-gradient(circle, rgba(255,106,57,.28), transparent 70%);
     display:flex; align-items:center; justify-content:center;
   }
+  @keyframes gps-pulse{
+    0%,100%{ transform:scale(1); opacity:1; }
+    50%{ transform:scale(1.1); opacity:.6; }
+  }
+  .gps-pin.searching{ animation:gps-pulse 1.3s ease-in-out infinite; }
   .gps-status{font-size:12.5px; color:var(--slate); min-height:16px; line-height:1.5;}
   .accuracy-tag{
     display:inline-block; margin-top:8px; font-family:'Space Mono',monospace;
     font-size:11.5px; padding:3px 9px; border-radius:20px;
     background:rgba(216,194,90,0.22); color:var(--turf-yellow-ink);
   }
+  .accuracy-tag.accuracy-good{ background:rgba(47,107,79,0.18); color:var(--fairway); }
 
   /* --- throw flow --- */
   .progress-track{display:flex; gap:5px; margin-bottom:16px;}
@@ -340,14 +346,15 @@
     <section class="screen" id="screen-startpoint">
       <h2 class="screentitle">1 · Utgangspunkt</h2>
       <div class="gps-hero">
-        <div class="gps-pin">
+        <div class="gps-pin" id="startpoint-pin">
           <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#FF6A39" stroke-width="2"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>
         </div>
         <div style="font-weight:700; font-size:15px;">Stå på teestedet</div>
-        <div class="gps-status" id="startpoint-status">Trykk for å registrere posisjonen din som utgangspunkt</div>
+        <div class="gps-status" id="startpoint-status">Søker etter posisjon …</div>
         <div id="accuracy-tag-wrap"></div>
       </div>
-      <button class="btn btn-primary" onclick="captureStartpoint()">Sett utgangspunkt (GPS)</button>
+      <button class="btn btn-primary" id="startpoint-capture-btn" onclick="confirmStartpoint()" disabled>Sett utgangspunkt (GPS)</button>
+      <button class="btn btn-ghost btn-small" id="startpoint-override-btn" style="margin-top:8px; margin-bottom:0; display:none;" onclick="confirmStartpoint()">Bruk nåværende posisjon likevel</button>
       <p class="empty-note" style="margin-top:10px;">Fungerer det ikke? Åpne denne siden i en egen nettleserfane (ikke i forhåndsvisning/app-vindu), og trykk "Tillat" når nettleseren spør om posisjon.</p>
       <button class="btn btn-ghost" style="margin-top:10px;" id="startpoint-next" onclick="goToAimScreen()" disabled>Neste: sikteretning →</button>
 
@@ -364,14 +371,15 @@
     <section class="screen" id="screen-aim">
       <h2 class="screentitle">2 · Sikteretning</h2>
       <div class="gps-hero">
-        <div class="gps-pin">
+        <div class="gps-pin" id="aim-pin">
           <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#FF6A39" stroke-width="2"><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/><circle cx="12" cy="12" r="4"/></svg>
         </div>
         <div style="font-weight:700; font-size:15px;">Gå i kasteretningen</div>
-        <div class="gps-status" id="aim-status">Gå minst 5–10 meter mot der du sikter (f.eks. mot kurven), og trykk for å registrere retningen.</div>
+        <div class="gps-status" id="aim-status">Gå minst 5–10 meter mot der du sikter (f.eks. mot kurven).</div>
         <div id="aim-accuracy-wrap"></div>
       </div>
-      <button class="btn btn-primary" onclick="captureAim()">Registrer sikteretning (GPS)</button>
+      <button class="btn btn-primary" id="aim-capture-btn" onclick="confirmAim()" disabled>Registrer sikteretning (GPS)</button>
+      <button class="btn btn-ghost btn-small" id="aim-override-btn" style="margin-top:8px; margin-bottom:0; display:none;" onclick="confirmAim()">Bruk nåværende posisjon likevel</button>
       <div class="btn-row">
         <button class="btn btn-ghost" onclick="skipAim()">Hopp over (kun avstand)</button>
         <button class="btn btn-secondary" id="aim-next" onclick="beginThrowFlow()" disabled>Neste →</button>
@@ -409,8 +417,10 @@
             <div class="chip-select-row" id="throw-type-row" style="justify-content:center;"></div>
           </div>
         </div>
-        <p class="gps-status" id="throw-status" style="text-align:center; margin-top:14px;">Stå ved disken og trykk registrer</p>
-        <button class="btn btn-primary" style="margin-top:6px;" id="throw-capture-btn" onclick="captureThrow()">Registrer posisjon (GPS)</button>
+        <p class="gps-status" id="throw-status" style="text-align:center; margin-top:14px;">Søker etter posisjon …</p>
+        <div id="throw-accuracy-wrap" style="text-align:center;"></div>
+        <button class="btn btn-primary" style="margin-top:6px;" id="throw-capture-btn" onclick="confirmThrow()" disabled>Registrer posisjon (GPS)</button>
+        <button class="btn btn-ghost btn-small" id="throw-override-btn" style="margin-top:8px; margin-bottom:0; display:none;" onclick="confirmThrow()">Bruk nåværende posisjon likevel</button>
         <button class="btn btn-secondary" style="margin-top:10px; display:none;" id="throw-next-btn" onclick="afterThrowContinue()">Fortsett →</button>
       </div>
     </section>
@@ -553,25 +563,62 @@ function toLocalXY(originLat, originLon, lat, lon){
   const y = (lat-originLat)*110540; // north meters
   return {x,y};
 }
-function getPosition(){
-  return new Promise((resolve, reject)=>{
-    if(!window.isSecureContext){ reject({code:0, message:'Denne siden er ikke lastet over HTTPS, så nettleseren tillater ikke posisjonsdeling.'}); return; }
-    if(!navigator.geolocation){ reject({code:0, message:'Geolokasjon støttes ikke i denne nettleseren.'}); return; }
-    navigator.geolocation.getCurrentPosition(
-      pos => resolve(pos.coords),
-      err => reject(err),
-      {enableHighAccuracy:true, timeout:12000, maximumAge:0}
-    );
-  });
-}
 function describeGeoError(e){
   const code = e && typeof e.code === 'number' ? e.code : null;
   let base;
   if(code === 1) base = 'Posisjonstilgang ble avslått for denne siden.';
   else if(code === 2) base = 'Posisjon ikke tilgjengelig akkurat nå (svak GPS/nettverk-dekning).';
-  else if(code === 3) base = 'Tidsavbrudd — fikk ikke posisjon innen 12 sekunder.';
+  else if(code === 3) base = 'Tidsavbrudd — fikk ikke posisjon innen 15 sekunder.';
   else base = (e && e.message) ? e.message : 'Ukjent posisjonsfeil.';
   return base + ' Åpner du denne siden inni en forhåndsvisning i Claude, kan nettleseren blokkere posisjonsdeling helt — trykk "Åpne i ny fane"/last ned filen og åpne den direkte i nettleseren, og trykk "Tillat" når den spør om posisjon.';
+}
+
+// ---------- LØPENDE GPS-SPORING (watchPosition + nøyaktighets-sperre) ----------
+// I stedet for å ta det aller første GPS-fikset (ofte upresist, spesielt i skog),
+// strømmer vi posisjoner og lar knappen først bli klikkbar når nøyaktigheten er
+// god nok. "Bruk likevel"-knappen er en manuell nødluke hvis signalet aldri blir bra.
+const ACCURACY_GOOD_M = 7;
+let activeWatchId = null;
+let watchBestCoords = null;
+function stopPositionWatch(){
+  if(activeWatchId!==null && navigator.geolocation){
+    navigator.geolocation.clearWatch(activeWatchId);
+  }
+  activeWatchId = null;
+  watchBestCoords = null;
+}
+function startPositionWatch(cfg){
+  stopPositionWatch();
+  cfg.primaryBtnEl.disabled = true;
+  if(cfg.overrideBtnEl) cfg.overrideBtnEl.style.display = 'none';
+  if(cfg.pinEl) cfg.pinEl.classList.add('searching');
+  if(!window.isSecureContext){
+    cfg.statusEl.textContent = describeGeoError({code:0, message:'Denne siden er ikke lastet over HTTPS, så nettleseren tillater ikke posisjonsdeling.'});
+    return;
+  }
+  if(!navigator.geolocation){
+    cfg.statusEl.textContent = describeGeoError({code:0, message:'Geolokasjon støttes ikke i denne nettleseren.'});
+    return;
+  }
+  cfg.statusEl.textContent = 'Søker etter posisjon …';
+  activeWatchId = navigator.geolocation.watchPosition(
+    pos => {
+      watchBestCoords = pos.coords;
+      const acc = pos.coords.accuracy;
+      const ready = acc <= ACCURACY_GOOD_M;
+      cfg.statusEl.textContent = ready
+        ? 'Godt signal ✓ — klar til å registrere'
+        : 'Søker etter godt signal … (±' + Math.round(acc) + ' m)';
+      cfg.accuracyWrapEl.innerHTML = `<div class="accuracy-tag${ready?' accuracy-good':''}">±${Math.round(acc)} m nøyaktighet</div>`;
+      cfg.primaryBtnEl.disabled = !ready;
+      if(cfg.pinEl) cfg.pinEl.classList.toggle('searching', !ready);
+      if(cfg.overrideBtnEl) cfg.overrideBtnEl.style.display = ready ? 'none' : 'block';
+    },
+    err => {
+      cfg.statusEl.textContent = describeGeoError(err);
+    },
+    {enableHighAccuracy:true, timeout:15000, maximumAge:0}
+  );
 }
 function formatDate(iso){
   try{
@@ -677,6 +724,7 @@ function initApp(){
 
 // ---------- TAB NAV ----------
 function showTab(name){
+  stopPositionWatch();
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   if(name==='bag'){ document.getElementById('screen-bag').classList.add('active'); }
@@ -793,56 +841,69 @@ function goToStartpoint(){
   roundSaved = false;
   windDirection = null;
   windStrength = null;
-  document.getElementById('startpoint-status').textContent = 'Trykk for å registrere posisjonen din som utgangspunkt';
   document.getElementById('accuracy-tag-wrap').innerHTML = '';
   document.getElementById('startpoint-next').disabled = true;
   renderWindChips();
   showScreen('screen-startpoint');
+  startPositionWatch({
+    pinEl: document.getElementById('startpoint-pin'),
+    statusEl: document.getElementById('startpoint-status'),
+    accuracyWrapEl: document.getElementById('accuracy-tag-wrap'),
+    primaryBtnEl: document.getElementById('startpoint-capture-btn'),
+    overrideBtnEl: document.getElementById('startpoint-override-btn')
+  });
 }
 
 // ---------- UTGANGSPUNKT ----------
-async function captureStartpoint(){
-  document.getElementById('startpoint-status').textContent = 'Henter posisjon …';
-  try{
-    const coords = await getPosition();
-    startpoint = {lat:coords.latitude, lon:coords.longitude};
-    document.getElementById('startpoint-status').textContent = 'Utgangspunkt registrert ✓';
-    document.getElementById('accuracy-tag-wrap').innerHTML =
-      `<div class="accuracy-tag">±${Math.round(coords.accuracy)} m nøyaktighet</div>`;
-    document.getElementById('startpoint-next').disabled = false;
-  }catch(e){
-    document.getElementById('startpoint-status').textContent = describeGeoError(e);
-  }
+function confirmStartpoint(){
+  if(!watchBestCoords) return;
+  const coords = watchBestCoords;
+  startpoint = {lat:coords.latitude, lon:coords.longitude};
+  stopPositionWatch();
+  document.getElementById('startpoint-pin').classList.remove('searching');
+  document.getElementById('startpoint-status').textContent = 'Utgangspunkt registrert ✓ (±' + Math.round(coords.accuracy) + ' m nøyaktighet)';
+  document.getElementById('accuracy-tag-wrap').innerHTML =
+    `<div class="accuracy-tag">±${Math.round(coords.accuracy)} m nøyaktighet</div>`;
+  document.getElementById('startpoint-capture-btn').disabled = true;
+  document.getElementById('startpoint-override-btn').style.display = 'none';
+  document.getElementById('startpoint-next').disabled = false;
 }
 
 // ---------- SIKTERETNING ----------
 function goToAimScreen(){
-  document.getElementById('aim-status').textContent = 'Gå minst 5–10 meter mot der du sikter (f.eks. mot kurven), og trykk for å registrere retningen.';
   document.getElementById('aim-accuracy-wrap').innerHTML = '';
   document.getElementById('aim-next').disabled = true;
   showScreen('screen-aim');
+  startPositionWatch({
+    pinEl: document.getElementById('aim-pin'),
+    statusEl: document.getElementById('aim-status'),
+    accuracyWrapEl: document.getElementById('aim-accuracy-wrap'),
+    primaryBtnEl: document.getElementById('aim-capture-btn'),
+    overrideBtnEl: document.getElementById('aim-override-btn')
+  });
 }
-async function captureAim(){
+function confirmAim(){
   if(!startpoint){ alert('Sett utgangspunkt først.'); return; }
-  document.getElementById('aim-status').textContent = 'Henter posisjon …';
-  try{
-    const coords = await getPosition();
-    const local = toLocalXY(startpoint.lat, startpoint.lon, coords.latitude, coords.longitude);
-    const mag = Math.hypot(local.x, local.y);
-    if(mag < 2){
-      document.getElementById('aim-status').textContent = 'For kort avstand (' + mag.toFixed(1) + ' m) — gå litt lenger i kasteretningen og prøv igjen.';
-      return;
-    }
-    aimVector = {x:local.x/mag, y:local.y/mag};
-    document.getElementById('aim-status').textContent = 'Sikteretning registrert ✓ (' + mag.toFixed(1) + ' m målelinje)';
-    document.getElementById('aim-accuracy-wrap').innerHTML =
-      `<div class="accuracy-tag">±${Math.round(coords.accuracy)} m GPS-nøyaktighet</div>`;
-    document.getElementById('aim-next').disabled = false;
-  }catch(e){
-    document.getElementById('aim-status').textContent = describeGeoError(e);
+  if(!watchBestCoords) return;
+  const coords = watchBestCoords;
+  const local = toLocalXY(startpoint.lat, startpoint.lon, coords.latitude, coords.longitude);
+  const mag = Math.hypot(local.x, local.y);
+  if(mag < 2){
+    alert('For kort avstand (' + mag.toFixed(1) + ' m) — gå litt lenger i kasteretningen og prøv igjen.');
+    return;
   }
+  aimVector = {x:local.x/mag, y:local.y/mag};
+  stopPositionWatch();
+  document.getElementById('aim-pin').classList.remove('searching');
+  document.getElementById('aim-status').textContent = 'Sikteretning registrert ✓ (' + mag.toFixed(1) + ' m målelinje, ±' + Math.round(coords.accuracy) + ' m nøyaktighet)';
+  document.getElementById('aim-accuracy-wrap').innerHTML =
+    `<div class="accuracy-tag">±${Math.round(coords.accuracy)} m GPS-nøyaktighet</div>`;
+  document.getElementById('aim-capture-btn').disabled = true;
+  document.getElementById('aim-override-btn').style.display = 'none';
+  document.getElementById('aim-next').disabled = false;
 }
 function skipAim(){
+  stopPositionWatch();
   aimVector = null;
   beginThrowFlow();
 }
@@ -920,61 +981,63 @@ function selectDiscToRegister(discId){
   document.getElementById('throw-distance').textContent = '–';
   document.getElementById('throw-lateral-wrap').innerHTML = '';
   document.getElementById('throw-corridor').innerHTML = buildCorridorSVG([]);
-  document.getElementById('throw-status').textContent = 'Stå ved disken og trykk registrer';
   document.getElementById('throw-capture-btn').style.display = 'block';
-  document.getElementById('throw-capture-btn').disabled = false;
   document.getElementById('throw-next-btn').style.display = 'none';
   document.getElementById('throw-picker-view').style.display = 'none';
   document.getElementById('throw-active-view').style.display = 'block';
   const existing = results.find(r=>r.discId===discId);
   currentThrowType = existing ? (existing.throwType || null) : null;
   renderThrowTypeChips();
+  startPositionWatch({
+    statusEl: document.getElementById('throw-status'),
+    accuracyWrapEl: document.getElementById('throw-accuracy-wrap'),
+    primaryBtnEl: document.getElementById('throw-capture-btn'),
+    overrideBtnEl: document.getElementById('throw-override-btn')
+  });
 }
 function cancelActiveThrow(){
+  stopPositionWatch();
   currentDiscId = null;
   showThrowPickerView();
 }
-async function captureThrow(){
+function confirmThrow(){
   if(!startpoint){ alert('Utgangspunkt mangler.'); return; }
   if(!currentDiscId){ alert('Ingen disk valgt.'); return; }
-  document.getElementById('throw-status').textContent = 'Henter posisjon …';
-  document.getElementById('throw-capture-btn').disabled = true;
-  try{
-    const coords = await getPosition();
-    const local = toLocalXY(startpoint.lat, startpoint.lon, coords.latitude, coords.longitude);
-    const distance = Math.hypot(local.x, local.y);
-    let lateral = null, along = distance;
-    if(aimVector){
-      along = local.x*aimVector.x + local.y*aimVector.y;
-      lateral = local.x*aimVector.y - local.y*aimVector.x;
-    }
-    const disc = discs.find(d=>d.id===currentDiscId);
-    // fjern evt. tidligere måling av samme disk (re-registrering overskriver)
-    results = results.filter(r=>r.discId!==currentDiscId);
-    results.push({discId:currentDiscId, distance, lateral, along, throwType:currentThrowType});
-
-    document.getElementById('throw-distance').textContent = distance.toFixed(1);
-    document.getElementById('throw-corridor').innerHTML = buildCorridorSVG([{x:lateral||0, y:along, color:disc.color}]);
-
-    if(lateral!==null){
-      const absLat = Math.abs(lateral);
-      let chipClass = 'chip-neutral', label = 'Rett på linja';
-      if(absLat >= 0.5){
-        chipClass = lateral>0 ? 'chip-right' : 'chip-left';
-        label = absLat.toFixed(1) + ' m til ' + (lateral>0 ? 'høyre' : 'venstre');
-      }
-      document.getElementById('throw-lateral-wrap').innerHTML = `<span class="lateral-chip ${chipClass}">${label}</span>`;
-    }else{
-      document.getElementById('throw-lateral-wrap').innerHTML = '';
-    }
-
-    document.getElementById('throw-status').textContent = 'Registrert ✓ (±' + Math.round(coords.accuracy) + ' m GPS-nøyaktighet)';
-    document.getElementById('throw-capture-btn').style.display = 'none';
-    document.getElementById('throw-next-btn').style.display = 'block';
-  }catch(e){
-    document.getElementById('throw-status').textContent = describeGeoError(e);
-    document.getElementById('throw-capture-btn').disabled = false;
+  if(!watchBestCoords) return;
+  const coords = watchBestCoords;
+  const local = toLocalXY(startpoint.lat, startpoint.lon, coords.latitude, coords.longitude);
+  const distance = Math.hypot(local.x, local.y);
+  let lateral = null, along = distance;
+  if(aimVector){
+    along = local.x*aimVector.x + local.y*aimVector.y;
+    lateral = local.x*aimVector.y - local.y*aimVector.x;
   }
+  const disc = discs.find(d=>d.id===currentDiscId);
+  // fjern evt. tidligere måling av samme disk (re-registrering overskriver)
+  results = results.filter(r=>r.discId!==currentDiscId);
+  results.push({discId:currentDiscId, distance, lateral, along, throwType:currentThrowType});
+  stopPositionWatch();
+
+  document.getElementById('throw-distance').textContent = distance.toFixed(1);
+  document.getElementById('throw-corridor').innerHTML = buildCorridorSVG([{x:lateral||0, y:along, color:disc.color}]);
+
+  if(lateral!==null){
+    const absLat = Math.abs(lateral);
+    let chipClass = 'chip-neutral', label = 'Rett på linja';
+    if(absLat >= 0.5){
+      chipClass = lateral>0 ? 'chip-right' : 'chip-left';
+      label = absLat.toFixed(1) + ' m til ' + (lateral>0 ? 'høyre' : 'venstre');
+    }
+    document.getElementById('throw-lateral-wrap').innerHTML = `<span class="lateral-chip ${chipClass}">${label}</span>`;
+  }else{
+    document.getElementById('throw-lateral-wrap').innerHTML = '';
+  }
+
+  document.getElementById('throw-status').textContent = 'Registrert ✓ (±' + Math.round(coords.accuracy) + ' m GPS-nøyaktighet)';
+  document.getElementById('throw-accuracy-wrap').innerHTML = '';
+  document.getElementById('throw-capture-btn').style.display = 'none';
+  document.getElementById('throw-override-btn').style.display = 'none';
+  document.getElementById('throw-next-btn').style.display = 'block';
 }
 function afterThrowContinue(){
   currentDiscId = null;
