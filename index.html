@@ -496,9 +496,10 @@
       <div class="field">
         <label>Type</label>
         <select id="new-disc-type">
-          <option value="Driver">Driver</option>
-          <option value="Midrange">Midrange</option>
-          <option value="Putter">Putter</option>
+          <option value="Distance Driver">Distance Driver</option>
+          <option value="Fairway Driver">Fairway Driver</option>
+          <option value="Mid-range">Mid-range</option>
+          <option value="Putt and Approach">Putt and Approach</option>
         </select>
       </div>
       <div class="field">
@@ -522,9 +523,9 @@ const WIND_STRENGTHS = [{key:'svak',label:'Svak'},{key:'middels',label:'Middels'
 const THROW_TYPES = [{key:'hyzer',label:'Hyzer'},{key:'anhyzer',label:'Anhyzer'},{key:'flatt',label:'Flatt'}];
 const WIND_DIR_LABELS = {med:'medvind', mot:'motvind', side:'sidevind'};
 let discs = [
-  {id:1, name:"Innova Destroyer", type:"Driver", color:"#FF6A39"},
-  {id:2, name:"Discmania PD", type:"Midrange", color:"#D8C25A"},
-  {id:3, name:"Latitude 64 Ballista", type:"Putter", color:"#3B3B3B"},
+  {id:1, name:"Innova Destroyer", type:"Distance Driver", color:"#FF6A39"},
+  {id:2, name:"Discmania PD", type:"Mid-range", color:"#D8C25A"},
+  {id:3, name:"Latitude 64 Ballista", type:"Putt and Approach", color:"#3B3B3B"},
 ];
 let nextId = 4;
 let selectedForRound = [];
@@ -632,6 +633,18 @@ function migrateOldStorageKeys(){
     });
   }catch(e){ /* localStorage utilgjengelig - ingenting å migrere */ }
 }
+const DISC_TYPE_MIGRATION = {'Driver':'Distance Driver', 'Midrange':'Mid-range', 'Putter':'Putt and Approach'};
+function migrateDiscTypes(){
+  // gamle 3 kategorier ("Driver"/"Midrange"/"Putter") erstattet med 4 nye - map lagrede disker over én gang
+  let changed = false;
+  discs.forEach(d=>{
+    if(DISC_TYPE_MIGRATION[d.type]){
+      d.type = DISC_TYPE_MIGRATION[d.type];
+      changed = true;
+    }
+  });
+  if(changed) persistDiscs();
+}
 function persistDiscs(){
   const res = Store.set('discs', JSON.stringify(discs));
   if(!res){ storageOk = false; document.getElementById('storage-note').style.display='block'; }
@@ -647,6 +660,7 @@ function initApp(){
     try{
       discs = JSON.parse(discsRes.value);
       nextId = discs.length ? Math.max(...discs.map(d=>d.id))+1 : 1;
+      migrateDiscTypes();
     }catch(e){ persistDiscs(); }
   }else{
     persistDiscs();
@@ -704,7 +718,7 @@ function openModal(discId){
   const disc = editingDiscId ? discs.find(d=>d.id===editingDiscId) : null;
   document.getElementById('modal-title-text').textContent = disc ? 'Rediger disk' : 'Legg til disk';
   document.getElementById('new-disc-name').value = disc ? disc.name : '';
-  document.getElementById('new-disc-type').value = disc ? disc.type : 'Driver';
+  document.getElementById('new-disc-type').value = disc ? disc.type : 'Distance Driver';
   pickedColor = disc ? disc.color : COLORS[0];
   const row = document.getElementById('swatch-row');
   row.innerHTML = '';
@@ -1203,7 +1217,7 @@ function renderCompareDiscs(){
     wrap.innerHTML = '<p class="empty-note">Ingen disker i registeret ennå.</p>';
     return;
   }
-  const groupOrder = ['Driver','Midrange','Putter'];
+  const groupOrder = ['Distance Driver','Fairway Driver','Mid-range','Putt and Approach'];
   let html = '';
   groupOrder.forEach(type=>{
     const inGroup = discs.filter(d=>d.type===type);
