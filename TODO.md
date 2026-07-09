@@ -17,7 +17,7 @@ Rediger- og slett-knapp per disk-kort. Sletting er ikke-destruktivt: disken fors
 ## 3. Historikk — slett runde — ferdig ✓
 Ny "Alle runder"-visning (nås fra Historikk-fanen) med slett-knapp + bekreftelse per runde.
 
-## 4. Git + publisering — delvis ferdig
-- ✓ Lokalt git-repo initialisert, initial commit gjort.
-- ✓ Privat GitHub-repo opprettet og pushet: https://github.com/lg2244-cpu/DGFW---Disc-Golf-Field-Work
-- ⏸ **GitHub Pages er ikke aktivert** — krever enten at repoet gjøres offentlig, eller GitHub Pro/Team (Pages støtter ikke private repos på gratis-plan). Avventer beslutning fra bruker om hvordan appen skal hostes for faktisk telefonbruk (GPS krever HTTPS/ekte hosting, fungerer ikke fra `file://`).
+## 4. Git + publisering — ferdig ✓
+- ✓ Lokalt git-repo initialisert.
+- ✓ GitHub-repo opprettet og pushet, gjort offentlig (bruker bekreftet — ingen hemmeligheter i koden): https://github.com/lg2244-cpu/DGFW---Disc-Golf-Field-Work
+- ✓ GitHub Pages aktivert og live: **https://lg2244-cpu.github.io/DGFW---Disc-Golf-Field-Work/**. Oppdateres automatisk ved push til `master`.
