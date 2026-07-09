@@ -157,6 +157,10 @@
   .btn:disabled{opacity:.35; cursor:not-allowed;}
   .btn-row{display:flex; gap:10px; margin-top:14px;}
   .btn-small{width:auto; padding:8px 14px; font-size:12.5px; margin-bottom:12px;}
+  .sticky-footer{
+    position:sticky; bottom:0; z-index:2;
+    background:var(--chalk); padding-top:10px; margin-top:8px;
+  }
 
   .fab{
     position:absolute; bottom:96px; right:20px;
@@ -368,7 +372,7 @@
         <div class="chip-select-row" id="wind-strength-row"></div>
       </div>
 
-      <div class="btn-row">
+      <div class="btn-row sticky-footer">
         <button class="btn btn-primary" id="start-round-btn" onclick="startRoundInSession()" disabled>Start runde →</button>
       </div>
     </section>
@@ -387,7 +391,9 @@
       <button class="btn btn-primary" id="startpoint-capture-btn" onclick="confirmStartpoint()" disabled>Sett utgangspunkt (GPS)</button>
       <button class="btn btn-ghost btn-small" id="startpoint-override-btn" style="margin-top:8px; margin-bottom:0; display:none;" onclick="confirmStartpoint()">Bruk nåværende posisjon likevel</button>
       <p class="empty-note" style="margin-top:10px;">Fungerer det ikke? Åpne denne siden i en egen nettleserfane (ikke i forhåndsvisning/app-vindu), og trykk "Tillat" når nettleseren spør om posisjon.</p>
-      <button class="btn btn-ghost" style="margin-top:10px;" id="startpoint-next" onclick="goToAimScreen()" disabled>Neste: sikteretning →</button>
+      <div class="sticky-footer">
+        <button class="btn btn-ghost" id="startpoint-next" onclick="goToAimScreen()" disabled>Neste: sikteretning →</button>
+      </div>
     </section>
 
     <!-- SCREEN: SIKTERETNING -->
@@ -403,7 +409,7 @@
       </div>
       <button class="btn btn-primary" id="aim-capture-btn" onclick="confirmAim()" disabled>Registrer sikteretning (GPS)</button>
       <button class="btn btn-ghost btn-small" id="aim-override-btn" style="margin-top:8px; margin-bottom:0; display:none;" onclick="confirmAim()">Bruk nåværende posisjon likevel</button>
-      <div class="btn-row">
+      <div class="btn-row sticky-footer">
         <button class="btn btn-ghost" onclick="skipAim()">Hopp over (kun avstand)</button>
         <button class="btn btn-secondary" id="aim-next" onclick="finishSessionSetup()" disabled>Neste →</button>
       </div>
@@ -418,7 +424,7 @@
         <p class="empty-note" id="throw-progress-note" style="margin-bottom:12px;">0 av 0 registrert</p>
         <div id="throw-remaining-list"></div>
         <div id="throw-done-list"></div>
-        <div id="throw-all-done-wrap"></div>
+        <div id="throw-all-done-wrap" class="sticky-footer"></div>
       </div>
 
       <!-- Aktiv registrering av valgt disk -->
@@ -445,7 +451,9 @@
             <div class="chip-select-row" id="throw-type-row" style="justify-content:center;"></div>
           </div>
         </div>
-        <button class="btn btn-secondary" style="margin-top:10px; display:none;" id="throw-next-btn" onclick="afterThrowContinue()">Fortsett →</button>
+        <div class="sticky-footer" style="display:none;" id="throw-next-wrap">
+          <button class="btn btn-secondary" id="throw-next-btn" onclick="afterThrowContinue()">Fortsett →</button>
+        </div>
       </div>
     </section>
 
@@ -1177,7 +1185,7 @@ function selectDiscToRegister(discId){
   document.getElementById('throw-lateral-wrap').innerHTML = '';
   document.getElementById('throw-corridor').innerHTML = buildCorridorSVG([]);
   document.getElementById('throw-capture-btn').style.display = 'block';
-  document.getElementById('throw-next-btn').style.display = 'none';
+  document.getElementById('throw-next-wrap').style.display = 'none';
   document.getElementById('throw-picker-view').style.display = 'none';
   document.getElementById('throw-active-view').style.display = 'block';
   const existing = results.find(r=>r.discId===discId);
@@ -1232,7 +1240,7 @@ function confirmThrow(){
   document.getElementById('throw-accuracy-wrap').innerHTML = '';
   document.getElementById('throw-capture-btn').style.display = 'none';
   document.getElementById('throw-override-btn').style.display = 'none';
-  document.getElementById('throw-next-btn').style.display = 'block';
+  document.getElementById('throw-next-wrap').style.display = 'block';
 }
 function afterThrowContinue(){
   currentDiscId = null;
