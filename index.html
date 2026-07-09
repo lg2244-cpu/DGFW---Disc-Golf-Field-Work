@@ -599,7 +599,7 @@ let throwQueue = []; // sett av discId'er valgt for runden (ingen fast rekkeføl
 let currentDiscId = null; // disken som er valgt for registrering akkurat nå
 let results = []; // {discId, distance, lateral, along}
 let rounds = []; // persisted history: [{id,date,aimUsed,throws:[{discId,distance,lateral,along}]}]
-let roundSaved = false;
+let savedRoundId = null; // id i rounds[] som gjeldende results er lagret under, null = ikke lagret ennå
 let pickedColor = COLORS[0];
 let storageOk = true;
 let editingDiscId = null; // null = "legg til"-modus i disk-modalen, ellers id på disken som redigeres
@@ -890,6 +890,10 @@ function deleteDisc(discId){
   discs = discs.filter(d=>d.id!==discId);
   const idx = selectedForRound.indexOf(discId);
   if(idx>-1) selectedForRound.splice(idx,1);
+  // fjern også fra pågående runde, ellers krasjer visninger som slår opp diskens navn/farge
+  results = results.filter(r=>r.discId!==discId);
+  throwQueue = throwQueue.filter(id=>id!==discId);
+  if(currentDiscId===discId) currentDiscId = null;
   persistDiscs();
   renderBag();
 }
@@ -1000,7 +1004,7 @@ function beginNewSession(){
   selectedForRound = [];
   currentDiscId = null;
   results = [];
-  roundSaved = false;
+  savedRoundId = null;
   windDirection = null;
   windStrength = null;
   sessionActive = false;
@@ -1022,6 +1026,7 @@ function editSessionPosition(){
     const ok = confirm('Du har allerede registrert ' + results.length + ' kast i denne runden basert på gjeldende utgangspunkt/sikteretning. Å endre dette gjør de kastene ugyldige og fjerner dem. Fortsette?');
     if(!ok) return;
     results = [];
+    savedRoundId = null; // evt. allerede lagret runde beholdes som historikk; nye kast starter en ny runde
   }
   document.getElementById('accuracy-tag-wrap').innerHTML = '';
   document.getElementById('startpoint-next').disabled = true;
@@ -1037,12 +1042,13 @@ function editSessionPosition(){
 function endSession(){
   const ok = confirm('Avslutte denne sesjonen? Du må sette nytt utgangspunkt og sikteretning for å starte en ny.');
   if(!ok) return;
+  maybeSaveRound(); // ikke mist en ferdig runde som aldri rakk innom Oversikt
   sessionActive = false;
   startpoint = null;
   aimVector = null;
   selectedForRound = [];
   results = [];
-  roundSaved = false;
+  savedRoundId = null;
   showTab('bag');
 }
 
@@ -1106,10 +1112,11 @@ function finishSessionSetup(){
 
 // ---------- KAST-FLOW (fri rekkefølge: du velger hvilken disk du står ved) ----------
 function startRoundInSession(){
+  maybeSaveRound(); // ikke mist forrige runde hvis brukeren hoppet over Oversikt
   throwQueue = selectedForRound.slice();
   currentDiscId = null;
   results = [];
-  roundSaved = false;
+  savedRoundId = null;
   beginThrowFlow();
 }
 function beginThrowFlow(){
@@ -1270,15 +1277,28 @@ function buildCorridorSVG(points){
 
 // ---------- OVERSIKT ----------
 function maybeSaveRound(){
-  if(roundSaved || results.length===0) return;
+  if(results.length===0) return;
+  const throwsSnapshot = results.map(r=>({discId:r.discId, distance:r.distance, lateral:r.lateral, along:r.along, throwType:r.throwType||null}));
+  if(savedRoundId!==null){
+    // runden er allerede lagret én gang - oppdater den med evt. nye/re-registrerte kast
+    const existing = rounds.find(r=>r.id===savedRoundId);
+    if(existing){
+      existing.wind = {direction:windDirection, strength:windStrength};
+      existing.throws = throwsSnapshot;
+      persistRounds();
+    }
+    // finnes den ikke lenger har brukeren slettet den fra historikken - ikke gjenopprett
+    return;
+  }
+  const id = Date.now();
   rounds.unshift({
-    id: Date.now(),
+    id,
     date: new Date().toISOString(),
     aimUsed: !!aimVector,
     wind: {direction:windDirection, strength:windStrength},
-    throws: results.map(r=>({discId:r.discId, distance:r.distance, lateral:r.lateral, along:r.along, throwType:r.throwType||null}))
+    throws: throwsSnapshot
   });
-  roundSaved = true;
+  savedRoundId = id;
   persistRounds();
 }
 function renderSummary(){
@@ -1331,8 +1351,9 @@ function renderSummary(){
 }
 function resetRound(){
   // selectedForRound bevisst IKKE nullstilt - samme diskutvalg er vanligvis det du vil teste på nytt i samme session
+  maybeSaveRound();
   results = [];
-  roundSaved = false;
+  savedRoundId = null;
   windDirection = null;
   windStrength = null;
   showTab('round');
