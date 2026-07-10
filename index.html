@@ -21,6 +21,23 @@
     --slate:#57685D;
     --line:rgba(16,36,26,0.16);
     --radius:18px;
+    /* Skjermhøyde-avhengige mål — krympes i @media (max-height) lenger ned,
+       slik at hele skjermer (spesielt GPS-flyten) er synlige uten scrolling
+       på korte telefoner/landskapsmodus. */
+    --header-pad:38px 22px 14px;
+    --screen-pad:18px 20px 20px;
+    --hero-pad:26px 20px;
+    --hero-mb:18px;
+    --pin-size:64px;
+    --pin-mb:14px;
+    --distance-fs:40px;
+    --throwcard-pad:20px 18px;
+    --btn-pad:14px 16px;
+    --stat-row-mb:16px;
+    --statbox-pad:12px 10px;
+    --chart-h:110px;
+    --tabbar-pad:10px 6px;
+    --fab-bottom:96px;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
@@ -61,7 +78,7 @@
     width:120px; height:24px; background:#0D1F17; border-radius:0 0 16px 16px; z-index:50;
   }
   header.appbar{
-    padding:38px 22px 14px;
+    padding:var(--header-pad);
     display:flex; flex-direction:column; gap:2px;
     border-bottom:1px solid var(--line);
     flex-shrink:0;
@@ -80,7 +97,7 @@
   .screens{flex:1; position:relative; overflow:hidden;}
   .screen{
     position:absolute; inset:0;
-    padding:18px 20px 20px;
+    padding:var(--screen-pad);
     overflow-y:auto;
     display:none;
     animation:fade .25s ease;
@@ -146,7 +163,7 @@
 
   .btn{
     display:block; width:100%; text-align:center;
-    padding:14px 16px; border-radius:14px; border:none;
+    padding:var(--btn-pad); border-radius:14px; border:none;
     font-family:'Manrope',sans-serif; font-weight:700; font-size:14.5px;
     cursor:pointer; letter-spacing:.01em;
   }
@@ -163,7 +180,7 @@
   }
 
   .fab{
-    position:absolute; bottom:96px; right:20px;
+    position:absolute; bottom:var(--fab-bottom); right:20px;
     width:52px; height:52px; border-radius:50%;
     background:var(--disc-orange); color:#1A1006;
     display:flex; align-items:center; justify-content:center;
@@ -202,12 +219,12 @@
     background:var(--chalk-dim);
     border:1px solid var(--line);
     border-radius:20px;
-    padding:26px 20px;
+    padding:var(--hero-pad);
     text-align:center;
-    margin-bottom:18px;
+    margin-bottom:var(--hero-mb);
   }
   .gps-pin{
-    width:64px;height:64px;margin:0 auto 14px;
+    width:var(--pin-size);height:var(--pin-size);margin:0 auto var(--pin-mb);
     border-radius:50%;
     background:radial-gradient(circle, rgba(255,106,57,.28), transparent 70%);
     display:flex; align-items:center; justify-content:center;
@@ -235,7 +252,7 @@
     background:var(--chalk-dim);
     border:1px solid var(--line);
     border-radius:20px;
-    padding:20px 18px;
+    padding:var(--throwcard-pad);
     text-align:center;
   }
   .throw-disc-swatch{
@@ -248,7 +265,7 @@
   .corridor-wrap{background:var(--chalk-dim); border:1px solid var(--line); border-radius:14px; padding:6px 4px 0; margin:6px 0;}
   .distance-readout{
     font-family:'Space Mono',monospace; font-weight:700;
-    font-size:40px; margin:8px 0 0; line-height:1;
+    font-size:var(--distance-fs); margin:8px 0 0; line-height:1;
   }
   .distance-unit{font-size:13px; color:var(--slate); letter-spacing:.06em; margin-bottom:8px;}
   .lateral-chip{
@@ -260,10 +277,10 @@
   .chip-neutral{background:var(--chalk-dim); color:var(--forest);}
 
   /* --- oversikt / historikk --- */
-  .stat-row{display:flex; gap:10px; margin-bottom:16px;}
+  .stat-row{display:flex; gap:10px; margin-bottom:var(--stat-row-mb);}
   .stat-box{
     flex:1; background:var(--chalk-dim); border:1px solid var(--line);
-    border-radius:14px; padding:12px 10px; text-align:center;
+    border-radius:14px; padding:var(--statbox-pad); text-align:center;
   }
   .stat-num{font-family:'Space Mono',monospace; font-weight:700; font-size:19px; color:var(--turf-yellow-ink);}
   .stat-label{font-size:10px; text-transform:uppercase; letter-spacing:.07em; color:var(--slate); margin-top:2px;}
@@ -277,7 +294,7 @@
   .result-bar-fill{height:100%; border-radius:6px;}
   .mini-chip{font-size:10.5px; font-family:'Space Mono',monospace; padding:2px 8px; border-radius:12px;}
 
-  .chart-bars{display:flex; align-items:flex-end; gap:6px; height:110px; margin:14px 0 6px;}
+  .chart-bars{display:flex; align-items:flex-end; gap:6px; height:var(--chart-h); margin:14px 0 6px;}
   .chart-bar{flex:1; border-radius:6px 6px 2px 2px; min-height:4px;}
   .history-entry{
     display:flex; justify-content:space-between; align-items:center;
@@ -289,7 +306,7 @@
   nav.tabbar{
     flex-shrink:0; display:flex; border-top:1px solid var(--line);
     background:rgba(250,248,240,0.94);
-    padding:10px 6px calc(14px + env(safe-area-inset-bottom,0px));
+    padding:var(--tabbar-pad) calc(14px + env(safe-area-inset-bottom,0px));
   }
   .tab{
     flex:1; display:flex; flex-direction:column; align-items:center; gap:4px;
@@ -319,6 +336,45 @@
     .phone{width:100%; height:100vh; height:100dvh; border:none; border-radius:0; box-shadow:none;}
     .notch{display:none;}
     .credit{display:none;}
+  }
+
+  /* Krymp layout/skrift/avstander på korte skjermer (små telefoner, landskapsmodus)
+     slik at knapper og innhold på en skjerm er synlige uten scrolling. */
+  @media (max-height: 700px){
+    :root{
+      --header-pad:16px 22px 10px;
+      --screen-pad:12px 20px 14px;
+      --hero-pad:16px 20px;
+      --hero-mb:12px;
+      --pin-size:48px;
+      --pin-mb:8px;
+      --distance-fs:32px;
+      --throwcard-pad:14px 18px;
+      --btn-pad:11px 16px;
+      --stat-row-mb:10px;
+      --statbox-pad:9px 8px;
+      --chart-h:80px;
+      --tabbar-pad:6px 6px;
+      --fab-bottom:76px;
+    }
+  }
+  @media (max-height: 560px){
+    :root{
+      --header-pad:10px 22px 8px;
+      --screen-pad:8px 20px 10px;
+      --hero-pad:10px 16px;
+      --hero-mb:8px;
+      --pin-size:36px;
+      --pin-mb:4px;
+      --distance-fs:26px;
+      --throwcard-pad:10px 16px;
+      --btn-pad:9px 16px;
+      --stat-row-mb:6px;
+      --statbox-pad:6px 6px;
+      --chart-h:56px;
+      --tabbar-pad:4px 6px;
+      --fab-bottom:64px;
+    }
   }
 </style>
 <link rel="manifest" href="manifest.json">
