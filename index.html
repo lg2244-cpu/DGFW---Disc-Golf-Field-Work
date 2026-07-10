@@ -611,12 +611,34 @@
     <!-- SCREEN: HISTORIKK (per disk, tab) -->
     <section class="screen" id="screen-history">
       <h2 class="screentitle">Statistikk · Per disk</h2>
+      <p class="dev-banner" id="history-dev-banner" style="display:none;">🧪 Viser testdata — dev-mode er på (skru av i Innstillinger)</p>
+
+      <div id="overview-filters" style="margin-bottom:14px;">
+        <details class="filter-group">
+          <summary>Filter: vindretning<span class="filter-group-value" id="overview-wind-filter-value"></span></summary>
+          <div class="chip-select-row" id="overview-wind-filter-row" style="margin-top:8px;"></div>
+        </details>
+        <details class="filter-group">
+          <summary>Filter: kasttype<span class="filter-group-value" id="overview-throwtype-filter-value"></span></summary>
+          <div class="chip-select-row" id="overview-throwtype-filter-row" style="margin-top:8px;"></div>
+        </details>
+        <details class="filter-group">
+          <summary>Presisjon<span class="filter-group-value" id="overview-precision-filter-value"></span></summary>
+          <div class="chip-select-row" id="overview-precision-filter-row" style="margin-top:8px;"></div>
+        </details>
+      </div>
+      <span class="chip-select-label" style="margin-top:0;">Alle kast, alle disker</span>
+      <div class="corridor-wrap" id="overview-spread"></div>
+      <div id="overview-legend" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin:8px 0 4px;"></div>
+      <p class="empty-note" style="text-align:center; margin:2px 0 14px;">Loddrett = kastelengde, vannrett = sideavvik (V/H) — hver prikk er ett kast, farget per disk</p>
+      <div class="stat-row" id="overview-stat-row" style="margin-bottom:16px;"></div>
+
       <div class="btn-row" id="history-links" style="margin-top:0; margin-bottom:6px;">
         <button class="btn btn-secondary btn-small" style="margin-bottom:0;" onclick="showBagReport()">Bag-rapportkort →</button>
         <button class="btn btn-secondary btn-small" style="margin-bottom:0;" onclick="showAllRounds()">Alle runder →</button>
         <button class="btn btn-secondary btn-small" style="margin-bottom:0;" onclick="showCompareDiscs()">Sammenlign disker →</button>
       </div>
-      <p class="dev-banner" id="history-dev-banner" style="display:none;">🧪 Viser testdata — dev-mode er på (skru av i Innstillinger)</p>
+      <span class="chip-select-label" style="margin-top:0;">Per disk</span>
       <div id="history-disc-list"></div>
     </section>
 
@@ -780,8 +802,8 @@
 // ---------- APP-VERSJON ----------
 // Bump APP_VERSION og sett APP_UPDATED_AT til pushe-tidspunktet (lokal tid) ved hver endring —
 // sammen med CACHE_NAME i service-worker.js. Vises nederst i Innstillinger.
-const APP_VERSION = 20;
-const APP_UPDATED_AT = '2026-07-10T19:58:00+02:00';
+const APP_VERSION = 21;
+const APP_UPDATED_AT = '2026-07-10T23:51:00+02:00';
 
 // ---------- STATE ----------
 const COLORS = ["#FF6A39","#D8C25A","#5FA88A","#3B3B3B","#7C8AC8","#C25C5C"];
@@ -814,6 +836,9 @@ let detailDiscId = null; // disken som vises i screen-discdetail akkurat nå
 let detailWindFilter = null; // filter i disk-detalj: 'med'|'mot'|'side'|null
 let detailThrowTypeFilter = null; // filter i disk-detalj: 'hyzer'|'anhyzer'|'flatt'|null
 let detailHideImprecise = false; // filter i disk-detalj: skjul kast med accuracy > ACCURACY_GOOD_M
+let overviewWindFilter = null; // filter i samle-spredningskartet (Statistikk-forsiden): 'med'|'mot'|'side'|null
+let overviewThrowTypeFilter = null; // filter i samle-spredningskartet: 'hyzer'|'anhyzer'|'flatt'|null
+let overviewHideImprecise = false; // filter i samle-spredningskartet: skjul kast med accuracy > ACCURACY_GOOD_M
 let devMode = false; // når true: Statistikk-fanen viser devDiscs/devRounds i stedet for ekte discs/rounds
 let throwVizMode = 'map'; // 'corridor'|'map' — valgt visning for kastet som akkurat er registrert
 let summaryVizMode = 'map'; // 'corridor'|'map' — valgt visning for Oversikt
@@ -1898,9 +1923,72 @@ function throwsForDisc(discId){
   });
   return out;
 }
+function allThrowsAcrossDiscs(){
+  const out = [];
+  activeRounds().forEach(r=>{
+    r.throws.forEach(t=>{
+      out.push({...t, date:r.date, windDirection: r.wind ? r.wind.direction : null, windStrength: r.wind ? r.wind.strength : null});
+    });
+  });
+  return out;
+}
+function renderOverviewFilters(){
+  renderChipRow('overview-wind-filter-row', WIND_DIRECTIONS, overviewWindFilter, (v)=>{ overviewWindFilter=v; renderOverviewFilters(); renderOverviewSpread(); });
+  renderChipRow('overview-throwtype-filter-row', THROW_TYPES, overviewThrowTypeFilter, (v)=>{ overviewThrowTypeFilter=v; renderOverviewFilters(); renderOverviewSpread(); });
+  const precisionOpt = [{key:'hide', label:'Skjul upresise kast (>' + ACCURACY_GOOD_M + ' m)'}];
+  renderChipRow('overview-precision-filter-row', precisionOpt, overviewHideImprecise ? 'hide' : null, (v)=>{ overviewHideImprecise = v==='hide'; renderOverviewFilters(); renderOverviewSpread(); });
+
+  const windLabel = overviewWindFilter ? WIND_DIRECTIONS.find(w=>w.key===overviewWindFilter).label : '';
+  const throwTypeLabel = overviewThrowTypeFilter ? THROW_TYPES.find(t=>t.key===overviewThrowTypeFilter).label : '';
+  document.getElementById('overview-wind-filter-value').textContent = windLabel;
+  document.getElementById('overview-throwtype-filter-value').textContent = throwTypeLabel;
+  document.getElementById('overview-precision-filter-value').textContent = overviewHideImprecise ? 'Skjuler upresise' : '';
+}
+function renderOverviewSpread(){
+  const discsNow = activeDiscs();
+  let all = allThrowsAcrossDiscs().filter(t=>
+    (!overviewWindFilter || t.windDirection===overviewWindFilter) &&
+    (!overviewThrowTypeFilter || t.throwType===overviewThrowTypeFilter)
+  );
+  if(overviewHideImprecise){
+    all = all.filter(t=> t.accuracy==null || t.accuracy<=ACCURACY_GOOD_M);
+  }
+  const wrap = document.getElementById('overview-spread');
+  const legendWrap = document.getElementById('overview-legend');
+  const statRow = document.getElementById('overview-stat-row');
+  if(all.length===0){
+    wrap.innerHTML = buildCorridorSVG([]);
+    legendWrap.innerHTML = '';
+    statRow.innerHTML = '';
+    return;
+  }
+  const points = all.map(t=>{
+    const disc = discsNow.find(d=>d.id===t.discId);
+    return {x:t.lateral||0, y:t.along!=null?t.along:t.distance, color: disc ? disc.color : '#57685D'};
+  });
+  wrap.innerHTML = buildCorridorSVG(points);
+
+  const usedDiscIds = [...new Set(all.map(t=>t.discId))];
+  legendWrap.innerHTML = usedDiscIds.map(id=>{
+    const disc = discsNow.find(d=>d.id===id);
+    if(!disc) return '';
+    return `<span style="display:flex; align-items:center; gap:5px; font-size:11px; color:var(--forest);"><span style="width:9px; height:9px; border-radius:50%; display:inline-block; background:${disc.color}; box-shadow:inset 0 0 0 1px rgba(16,36,26,0.25);"></span>${disc.name}</span>`;
+  }).join('');
+
+  const distances = all.map(t=>t.distance);
+  const avg = distances.reduce((a,b)=>a+b,0)/distances.length;
+  const longest = Math.max(...distances);
+  statRow.innerHTML = `
+    <div class="stat-box"><div class="stat-num">${all.length}</div><div class="stat-label">Kast</div></div>
+    <div class="stat-box"><div class="stat-num">${avg.toFixed(0)}</div><div class="stat-label">Snitt</div></div>
+    <div class="stat-box"><div class="stat-num">${longest.toFixed(0)}</div><div class="stat-label">Lengst</div></div>
+  `;
+}
 function renderHistoryList(){
   const wrap = document.getElementById('history-disc-list');
   document.getElementById('history-dev-banner').style.display = devMode ? 'block' : 'none';
+  renderOverviewFilters();
+  renderOverviewSpread();
   const discsNow = activeDiscs();
   if(discsNow.length===0){
     wrap.innerHTML = '<p class="empty-note">Ingen disker i registeret ennå.</p>';

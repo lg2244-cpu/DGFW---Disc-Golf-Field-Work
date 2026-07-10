@@ -162,3 +162,13 @@ Utvidet punkt 26 til alle stedene appen viser en siktelinje (bruker ba om «alle
 - **Kart er nå standard** begge steder (`throwVizMode`/`summaryVizMode` starter på `'map'`) — diagrammet er fortsatt tilgjengelig ved trykk på "Diagram", men brukeren må aktivt velge det bort nå, ikke motsatt.
 - **Bevisst holdt utenfor**: Kastkart i disk-detalj (aggregerer kast på tvers av mange ulike økter/utgangspunkt) fikk *ikke* kartvisning — avklart med bruker, siden den visningen normaliserer bort den fysiske plasseringen med vilje for å kunne sammenligne kast fra ulike steder, og har ingen felles siktelinje å tegne på et ekte kart.
 - Verifisert i preview med simulert GPS: bekreftet kart vises som standard med riktig antall markører/linjer i begge skjermer (1 kast → 3 elementer, 2 kast i Oversikt → 5 elementer), at kartflisen faktisk lastet (`naturalWidth: 256`, `complete: true`), og at veksling til diagram og tilbake fungerer.
+
+## 28. Samle-spredningskart øverst i Statistikk-fanen
+
+Inspirert av en annen disc golf-app ([Discloggen](https://krissern97.github.io/discloggen/), sett på etter brukerens forespørsel — se mockup-runden i samtalen), som leder statistikksiden sin med ett spredningskart for *alle* kast i stedet for en diskliste først.
+
+- Ny seksjon øverst i Statistikk-fanen (`renderOverviewSpread()`), rett under dev-banneret og over diskliste/knapperaden: alle kast fra alle disker plottet i samme korridor-SVG, farget per disk, med en legend under (siden farge alene ikke skiller 6 disker fra hverandre — jf. dataviz-prinsipper).
+- Egne filtre (vindretning/kasttype/presisjon), samme kollapsbare `.filter-group`-mønster som disk-detalj, men med egne state-variabler (`overviewWindFilter` osv.) — helt separat fra disk-detaljens filter, ingen kryssforurensning.
+- Ny `allThrowsAcrossDiscs()` — som `throwsForDisc()`, men uten discId-filter.
+- **Bevisst holdt utenfor**: disklisten og drill-ned til per-disk-detalj er uendret, kun lagt til over — avklart med bruker for å unngå en større omlegging av navigasjonen.
+- Verifisert i preview: dev-mode-isolasjon fungerer (ekte/falske disker vises riktig avhengig av `devMode`), filtrering fungerer (96→16 kast ved hyzer-filter i testdata), tomt-filter-tilstand håndteres uten feil (tom legend/statrad, korridor uten prikker), ingen konsollfeil.
