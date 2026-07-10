@@ -161,6 +161,22 @@
   .chip-select-btn.sel{background:var(--disc-orange); border-color:var(--disc-orange); color:#1A1006;}
   .chip-select-label{font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--slate); margin-top:12px; display:block;}
 
+  /* --- minimerte filtergrupper (disk-detalj) --- */
+  .filter-group{border:1px solid var(--line); border-radius:10px; background:var(--chalk-dim); margin-top:8px; padding:0 12px;}
+  .filter-group[open]{padding-bottom:12px;}
+  .filter-group summary{
+    display:flex; align-items:center; gap:6px; cursor:pointer; list-style:none;
+    padding:10px 0; font-size:11px; text-transform:uppercase; letter-spacing:.08em;
+    color:var(--slate); font-weight:700;
+  }
+  .filter-group summary::-webkit-details-marker{display:none;}
+  .filter-group:not([open]) .chip-select-row{display:none;}
+  .filter-group summary::after{content:'▾'; margin-left:auto; font-size:10px; color:var(--slate); transition:transform .15s;}
+  .filter-group[open] summary::after{transform:rotate(180deg);}
+  .filter-group-value{
+    font-size:11px; text-transform:none; letter-spacing:0; font-weight:800; color:var(--disc-orange-ink);
+  }
+
   .btn{
     display:block; width:100%; text-align:center;
     padding:var(--btn-pad); border-radius:14px; border:none;
@@ -568,12 +584,18 @@
       <h2 class="screentitle" id="detail-disc-title">Disk</h2>
       <p class="dev-banner" id="discdetail-dev-banner" style="display:none;">🧪 Viser testdata — dev-mode er på (skru av i Innstillinger)</p>
       <div id="detail-filters" style="margin-bottom:14px;">
-        <span class="chip-select-label" style="margin-top:0;">Filter: vindretning</span>
-        <div class="chip-select-row" id="detail-wind-filter-row"></div>
-        <span class="chip-select-label">Filter: kasttype</span>
-        <div class="chip-select-row" id="detail-throwtype-filter-row"></div>
-        <span class="chip-select-label">Presisjon</span>
-        <div class="chip-select-row" id="detail-precision-filter-row"></div>
+        <details class="filter-group">
+          <summary>Filter: vindretning<span class="filter-group-value" id="detail-wind-filter-value"></span></summary>
+          <div class="chip-select-row" id="detail-wind-filter-row" style="margin-top:8px;"></div>
+        </details>
+        <details class="filter-group">
+          <summary>Filter: kasttype<span class="filter-group-value" id="detail-throwtype-filter-value"></span></summary>
+          <div class="chip-select-row" id="detail-throwtype-filter-row" style="margin-top:8px;"></div>
+        </details>
+        <details class="filter-group">
+          <summary>Presisjon<span class="filter-group-value" id="detail-precision-filter-value"></span></summary>
+          <div class="chip-select-row" id="detail-precision-filter-row" style="margin-top:8px;"></div>
+        </details>
       </div>
       <div class="stat-row" id="detail-stat-row"></div>
       <div id="detail-extra-stats"></div>
@@ -1703,6 +1725,12 @@ function renderDetailFilters(){
   renderChipRow('detail-throwtype-filter-row', THROW_TYPES, detailThrowTypeFilter, (v)=>{ detailThrowTypeFilter=v; renderDetailFilters(); renderDiscDetail(); });
   const precisionOpt = [{key:'hide', label:'Skjul upresise kast (>' + ACCURACY_GOOD_M + ' m)'}];
   renderChipRow('detail-precision-filter-row', precisionOpt, detailHideImprecise ? 'hide' : null, (v)=>{ detailHideImprecise = v==='hide'; renderDetailFilters(); renderDiscDetail(); });
+
+  const windLabel = detailWindFilter ? WIND_DIRECTIONS.find(w=>w.key===detailWindFilter).label : '';
+  const throwTypeLabel = detailThrowTypeFilter ? THROW_TYPES.find(t=>t.key===detailThrowTypeFilter).label : '';
+  document.getElementById('detail-wind-filter-value').textContent = windLabel;
+  document.getElementById('detail-throwtype-filter-value').textContent = throwTypeLabel;
+  document.getElementById('detail-precision-filter-value').textContent = detailHideImprecise ? 'Skjuler upresise' : '';
 }
 function openDiscDetail(discId){
   detailDiscId = discId;
