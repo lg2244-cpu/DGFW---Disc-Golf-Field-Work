@@ -213,6 +213,11 @@
   .flight-nums{font-family:'Space Mono',monospace; font-size:11px; color:var(--slate); margin-top:3px;}
 
   .empty-note{font-size:12.5px; color:var(--slate); line-height:1.5; margin-top:6px;}
+  .dev-banner{
+    background:rgba(216,194,90,0.25); color:var(--turf-yellow-ink);
+    font-size:11.5px; font-weight:700; padding:9px 12px; border-radius:10px;
+    margin:0 0 12px; text-align:center;
+  }
 
   /* --- GPS capture screens --- */
   .gps-hero{
@@ -399,13 +404,8 @@
     <!-- SCREEN: BAG -->
     <section class="screen active" id="screen-bag">
       <h2 class="screentitle">Bag · Diskregister</h2>
-      <div class="btn-row" style="margin-top:0; margin-bottom:10px;">
-        <button class="btn btn-secondary btn-small" style="margin-bottom:0;" onclick="exportDiscs()">Eksporter →</button>
-        <button class="btn btn-secondary btn-small" style="margin-bottom:0;" onclick="triggerImportDiscs()">Importer →</button>
-        <input type="file" id="import-discs-input" accept=".txt,text/plain" style="display:none;" onchange="handleImportDiscsFile(event)">
-      </div>
       <div id="disc-list"><p class="empty-note">Laster registeret …</p></div>
-      <p class="empty-note">Dette er diskene dine. Legg til alle diskene du normalt kaster med — du velger blant disse når du starter en ny runde. Eksporter for å redigere/legge til mange på PC, importer for å hente dem inn igjen (oppdaterer disker med samme navn, legger til nye).</p>
+      <p class="empty-note">Dette er diskene dine. Legg til alle diskene du normalt kaster med — du velger blant disse når du starter en ny runde.</p>
       <button class="fab" onclick="openModal()">+</button>
     </section>
 
@@ -529,12 +529,7 @@
         <button class="btn btn-secondary btn-small" style="margin-bottom:0;" onclick="showAllRounds()">Alle runder →</button>
         <button class="btn btn-secondary btn-small" style="margin-bottom:0;" onclick="showCompareDiscs()">Sammenlign disker →</button>
       </div>
-      <div class="btn-row" style="margin-top:0; margin-bottom:10px;">
-        <button class="btn btn-ghost btn-small" style="margin-bottom:0;" onclick="exportAllData()">Sikkerhetskopi →</button>
-        <button class="btn btn-ghost btn-small" style="margin-bottom:0;" onclick="triggerImportAllData()">Gjenopprett →</button>
-        <input type="file" id="import-all-input" accept=".json,application/json" style="display:none;" onchange="handleImportAllDataFile(event)">
-      </div>
-      <p class="empty-note" style="margin:-4px 0 12px;">Sikkerhetskopi laster ned én fil med alle disker og runder (JSON) — til bruk hvis du bytter telefon eller mister data. Gjenopprett erstatter alt du har i appen nå med innholdet i filen.</p>
+      <p class="dev-banner" id="history-dev-banner" style="display:none;">🧪 Viser testdata — dev-mode er på (skru av i Innstillinger)</p>
       <div id="history-disc-list"></div>
     </section>
 
@@ -542,6 +537,7 @@
     <section class="screen" id="screen-discdetail">
       <button class="btn btn-ghost btn-small" onclick="showTab('history')">← Tilbake</button>
       <h2 class="screentitle" id="detail-disc-title">Disk</h2>
+      <p class="dev-banner" id="discdetail-dev-banner" style="display:none;">🧪 Viser testdata — dev-mode er på (skru av i Innstillinger)</p>
       <div id="detail-filters" style="margin-bottom:14px;">
         <span class="chip-select-label" style="margin-top:0;">Filter: vindretning</span>
         <div class="chip-select-row" id="detail-wind-filter-row"></div>
@@ -561,6 +557,7 @@
     <section class="screen" id="screen-allrounds">
       <button class="btn btn-ghost btn-small" onclick="showTab('history')">← Tilbake</button>
       <h2 class="screentitle">Historikk · Alle runder</h2>
+      <p class="dev-banner" id="allrounds-dev-banner" style="display:none;">🧪 Viser testdata — dev-mode er på (skru av i Innstillinger)</p>
       <div id="allrounds-list"></div>
     </section>
 
@@ -568,7 +565,34 @@
     <section class="screen" id="screen-comparediscs">
       <button class="btn btn-ghost btn-small" onclick="showTab('history')">← Tilbake</button>
       <h2 class="screentitle">Sammenlign disker</h2>
+      <p class="dev-banner" id="compare-dev-banner" style="display:none;">🧪 Viser testdata — dev-mode er på (skru av i Innstillinger)</p>
       <div id="compare-list"></div>
+    </section>
+
+    <!-- SCREEN: INNSTILLINGER -->
+    <section class="screen" id="screen-settings">
+      <h2 class="screentitle">Innstillinger</h2>
+
+      <h2 class="screentitle" style="margin-top:4px;">Diskregister</h2>
+      <p class="empty-note" style="margin-bottom:10px;">Eksporter for å redigere/legge til mange disker på PC, importer for å hente dem inn igjen (oppdaterer disker med samme navn, legger til nye).</p>
+      <div class="btn-row" style="margin-top:0; margin-bottom:20px;">
+        <button class="btn btn-secondary btn-small" style="margin-bottom:0;" onclick="exportDiscs()">Eksporter disker →</button>
+        <button class="btn btn-secondary btn-small" style="margin-bottom:0;" onclick="triggerImportDiscs()">Importer disker →</button>
+        <input type="file" id="import-discs-input" accept=".txt,text/plain" style="display:none;" onchange="handleImportDiscsFile(event)">
+      </div>
+
+      <h2 class="screentitle">Sikkerhetskopi</h2>
+      <p class="empty-note" style="margin-bottom:10px;">Sikkerhetskopi laster ned én fil med alle disker og runder (JSON) — til bruk hvis du bytter telefon eller mister data. Gjenopprett erstatter alt du har i appen nå med innholdet i filen.</p>
+      <div class="btn-row" style="margin-top:0; margin-bottom:20px;">
+        <button class="btn btn-ghost btn-small" style="margin-bottom:0;" onclick="exportAllData()">Sikkerhetskopi →</button>
+        <button class="btn btn-ghost btn-small" style="margin-bottom:0;" onclick="triggerImportAllData()">Gjenopprett →</button>
+        <input type="file" id="import-all-input" accept=".json,application/json" style="display:none;" onchange="handleImportAllDataFile(event)">
+      </div>
+
+      <h2 class="screentitle">Dev-mode</h2>
+      <p class="empty-note" style="margin-bottom:8px;">Når dev-mode er på, viser Historikk-fanen kunstige disker og runder i stedet for din ekte historikk — nyttig for å se hvordan skjermen ser ut med mye data. Bag, Ny runde og Oversikt påvirkes ikke, og ekte data røres aldri (helt separat lagringsrom).</p>
+      <div class="chip-select-row" id="devmode-toggle-row" style="margin-bottom:10px;"></div>
+      <button class="btn btn-ghost btn-small" id="devmode-regenerate-btn" style="margin-bottom:0; display:none;" onclick="generateDevData(); renderDevModeToggle();">Generer nye testdata →</button>
     </section>
 
   </div>
@@ -589,6 +613,10 @@
     <button class="tab" data-tab="history" onclick="showTab('history')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
       Historikk
+    </button>
+    <button class="tab" data-tab="settings" onclick="showTab('settings')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Innstillinger
     </button>
   </nav>
 
@@ -675,6 +703,9 @@ let detailDiscId = null; // disken som vises i screen-discdetail akkurat nå
 let detailWindFilter = null; // filter i disk-detalj: 'med'|'mot'|'side'|null
 let detailThrowTypeFilter = null; // filter i disk-detalj: 'hyzer'|'anhyzer'|'flatt'|null
 let detailHideImprecise = false; // filter i disk-detalj: skjul kast med accuracy > ACCURACY_GOOD_M
+let devMode = false; // når true: Historikk-fanen viser devDiscs/devRounds i stedet for ekte discs/rounds
+let devDiscs = []; // kunstige disker, helt isolert fra ekte discs (egen localStorage-nøkkel)
+let devRounds = []; // kunstige runder, helt isolert fra ekte rounds
 
 // ---------- GEO HELPERS ----------
 function toLocalXY(originLat, originLon, lat, lon){
@@ -855,6 +886,72 @@ function persistRounds(){
   const res = Store.set('rounds', JSON.stringify(rounds));
   if(!res){ storageOk = false; document.getElementById('storage-note').style.display='block'; }
 }
+
+// ---------- DEV-MODE (isolert testdata for Historikk) ----------
+// Helt separat lagringsrom (localStorage-nøkler prefikset "dgfw-dev:") - rører aldri ekte discs/rounds.
+// Bag, Ny runde og Oversikt bruker alltid ekte data uansett devMode; kun Historikk-visningene sjekker devMode.
+function activeDiscs(){ return devMode ? devDiscs : discs; }
+function activeRounds(){ return devMode ? devRounds : rounds; }
+function persistDevDiscs(){ try{ localStorage.setItem('dgfw-dev:discs', JSON.stringify(devDiscs)); }catch(e){} }
+function persistDevRounds(){ try{ localStorage.setItem('dgfw-dev:rounds', JSON.stringify(devRounds)); }catch(e){} }
+function loadDevModeState(){
+  try{ devMode = localStorage.getItem('dgfw:devMode') === '1'; }catch(e){ devMode = false; }
+  try{
+    const d = localStorage.getItem('dgfw-dev:discs');
+    const r = localStorage.getItem('dgfw-dev:rounds');
+    devDiscs = d ? JSON.parse(d) : [];
+    devRounds = r ? JSON.parse(r) : [];
+  }catch(e){ devDiscs = []; devRounds = []; }
+}
+const DEV_DISC_TEMPLATES = [
+  {name:'Falske Destroyer', type:'Distance Driver', color:'#FF6A39', base:108},
+  {name:'Falske Wraith', type:'Distance Driver', color:'#C25C5C', base:112},
+  {name:'Falske Teebird', type:'Fairway Driver', color:'#7C8AC8', base:92},
+  {name:'Falske Leopard', type:'Fairway Driver', color:'#5FA88A', base:86},
+  {name:'Falske Buzzz', type:'Mid-range', color:'#D8C25A', base:72},
+  {name:'Falske Roc', type:'Mid-range', color:'#3B3B3B', base:66},
+  {name:'Falske Aviar', type:'Putt and Approach', color:'#FF6A39', base:46},
+  {name:'Falske Zone', type:'Putt and Approach', color:'#7C8AC8', base:40}
+];
+function generateDevData(){
+  devDiscs = DEV_DISC_TEMPLATES.map((t,i)=>({id:i+1, name:t.name, type:t.type, color:t.color}));
+  devRounds = [];
+  const windDirs = [null,'med','mot','side','stille'];
+  const throwTypes = [null,'hyzer','anhyzer','flatt'];
+  let nextRoundId = 1;
+  for(let i=0;i<30;i++){
+    const daysAgo = Math.floor(Math.random()*120);
+    const date = new Date(Date.now() - daysAgo*86400000).toISOString();
+    const windDir = windDirs[Math.floor(Math.random()*windDirs.length)];
+    const wind = {
+      direction: windDir,
+      strength: (windDir && windDir!=='stille') ? ['svak','middels','sterk'][Math.floor(Math.random()*3)] : null
+    };
+    const shuffled = devDiscs.slice().sort(()=>Math.random()-0.5);
+    const discsInRound = shuffled.slice(0, 2+Math.floor(Math.random()*3));
+    const throws = discsInRound.map(d=>{
+      const tmpl = DEV_DISC_TEMPLATES.find(x=>x.name===d.name);
+      const distance = Math.max(12, tmpl.base + (Math.random()*20-10));
+      const lateral = Math.random()*10-5;
+      const accuracy = Math.random()<0.15 ? (10+Math.random()*20) : (2+Math.random()*4);
+      return {discId:d.id, distance, lateral, along:distance, throwType: throwTypes[Math.floor(Math.random()*throwTypes.length)], accuracy};
+    });
+    devRounds.push({id: nextRoundId++, date, aimUsed:true, wind, throws});
+  }
+  devRounds.sort((a,b)=> new Date(b.date) - new Date(a.date));
+  persistDevDiscs();
+  persistDevRounds();
+}
+function renderDevModeToggle(){
+  renderChipRow('devmode-toggle-row', [{key:'on', label: devMode ? 'Dev-mode: PÅ' : 'Dev-mode: AV'}], devMode ? 'on' : null, (v)=>{
+    devMode = v==='on';
+    try{ localStorage.setItem('dgfw:devMode', devMode ? '1' : '0'); }catch(e){}
+    if(devMode && devDiscs.length===0){ generateDevData(); }
+    renderDevModeToggle();
+  });
+  document.getElementById('devmode-regenerate-btn').style.display = devMode ? 'block' : 'none';
+}
+
 function initApp(){
   migrateOldStorageKeys();
   const discsRes = Store.get('discs');
@@ -871,6 +968,7 @@ function initApp(){
   if(roundsRes && roundsRes.value){
     try{ rounds = JSON.parse(roundsRes.value); }catch(e){ /* korrupt data, starter tomt */ }
   }
+  loadDevModeState();
 
   if(!storageOk){ document.getElementById('storage-note').style.display='block'; }
   renderBag();
@@ -894,6 +992,7 @@ function showTab(name){
   }
   if(name==='summary'){ renderSummary(); document.getElementById('screen-summary').classList.add('active'); }
   if(name==='history'){ renderHistoryList(); document.getElementById('screen-history').classList.add('active'); }
+  if(name==='settings'){ renderDevModeToggle(); document.getElementById('screen-settings').classList.add('active'); }
   const tabBtn = document.querySelector('.tab[data-tab="'+name+'"]');
   if(tabBtn) tabBtn.classList.add('active');
 }
@@ -1517,7 +1616,7 @@ function resetRound(){
 // ---------- HISTORIKK ----------
 function throwsForDisc(discId){
   const out = [];
-  rounds.forEach(r=>{
+  activeRounds().forEach(r=>{
     r.throws.forEach(t=>{
       if(t.discId===discId) out.push({...t, date:r.date, windDirection: r.wind ? r.wind.direction : null, windStrength: r.wind ? r.wind.strength : null});
     });
@@ -1526,12 +1625,14 @@ function throwsForDisc(discId){
 }
 function renderHistoryList(){
   const wrap = document.getElementById('history-disc-list');
-  if(discs.length===0){
+  document.getElementById('history-dev-banner').style.display = devMode ? 'block' : 'none';
+  const discsNow = activeDiscs();
+  if(discsNow.length===0){
     wrap.innerHTML = '<p class="empty-note">Ingen disker i registeret ennå.</p>';
     return;
   }
   wrap.innerHTML = '';
-  discs.forEach(d=>{
+  discsNow.forEach(d=>{
     const t = throwsForDisc(d.id);
     const el = document.createElement('div');
     el.className = 'disc-card clickable';
@@ -1565,8 +1666,9 @@ function openDiscDetail(discId){
 }
 function renderDiscDetail(){
   const discId = detailDiscId;
-  const disc = discs.find(d=>d.id===discId);
+  const disc = activeDiscs().find(d=>d.id===discId);
   document.getElementById('detail-disc-title').textContent = disc.name;
+  document.getElementById('discdetail-dev-banner').style.display = devMode ? 'block' : 'none';
 
   const allForDisc = throwsForDisc(discId);
   document.getElementById('detail-filters').style.display = allForDisc.length===0 ? 'none' : 'block';
@@ -1691,14 +1793,16 @@ function showCompareDiscs(){
 }
 function renderCompareDiscs(){
   const wrap = document.getElementById('compare-list');
-  if(discs.length===0){
+  document.getElementById('compare-dev-banner').style.display = devMode ? 'block' : 'none';
+  const discsNow = activeDiscs();
+  if(discsNow.length===0){
     wrap.innerHTML = '<p class="empty-note">Ingen disker i registeret ennå.</p>';
     return;
   }
   const groupOrder = ['Distance Driver','Fairway Driver','Mid-range','Putt and Approach'];
   let html = '';
   groupOrder.forEach(type=>{
-    const inGroup = discs.filter(d=>d.type===type);
+    const inGroup = discsNow.filter(d=>d.type===type);
     if(inGroup.length===0) return;
     const withStats = inGroup.map(d=>{
       const t = throwsForDisc(d.id);
@@ -1745,12 +1849,14 @@ function showAllRounds(){
 }
 function renderAllRounds(){
   const wrap = document.getElementById('allrounds-list');
-  if(rounds.length===0){
+  document.getElementById('allrounds-dev-banner').style.display = devMode ? 'block' : 'none';
+  const roundsNow = activeRounds();
+  if(roundsNow.length===0){
     wrap.innerHTML = '<p class="empty-note">Ingen runder lagret ennå.</p>';
     return;
   }
   wrap.innerHTML = '';
-  rounds.forEach(r=>{
+  roundsNow.forEach(r=>{
     let windTxt = '';
     if(r.wind && (r.wind.direction || r.wind.strength)){
       const parts = [r.wind.strength || '', r.wind.direction ? WIND_DIR_LABELS[r.wind.direction] : ''].filter(Boolean);
@@ -1769,8 +1875,13 @@ function renderAllRounds(){
 function deleteRound(roundId){
   const ok = confirm('Slette denne runden? Dette kan ikke angres.');
   if(!ok) return;
-  rounds = rounds.filter(r=>r.id!==roundId);
-  persistRounds();
+  if(devMode){
+    devRounds = devRounds.filter(r=>r.id!==roundId);
+    persistDevRounds();
+  }else{
+    rounds = rounds.filter(r=>r.id!==roundId);
+    persistRounds();
+  }
   renderAllRounds();
 }
 

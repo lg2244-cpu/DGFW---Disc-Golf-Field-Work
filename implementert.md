@@ -84,3 +84,12 @@ To knapper i Historikk-fanen: «Sikkerhetskopi →» laster ned én JSON-fil med
 - **Beste måned** — grupperer kastene per kalendermåned og viser måneden med høyest snittavstand som egen chip, kun når data spenner over minst to måneder.
 - **Trendgraf** — ny `buildTrendLineSVG()`-funksjon tegner en linje over tid (avstand per kast, kronologisk) i en egen boks over stolpediagrammet, som supplement til det (ikke erstatning). Vises kun ved ≥2 kast.
 - Gjenstår i TODO.md: eget snitt for siste 10 kast, og sammenligning mot en brukervalgt tidligere periode (krever ny periodevelger-UI).
+
+## 18. Innstillinger-fane, med dev-mode for Historikk
+Ny femte hovedfane «Innstillinger» (`screen-settings`) i bunn-navigasjonen.
+- **Samlet eksport/import** — disk-eksport/import (.txt) flyttet hit fra Bag, JSON-sikkerhetskopi/gjenopprett flyttet hit fra Historikk. Begge fortsetter å operere på ekte `discs`/`rounds` uansett dev-mode-status — dette er databehandling, ikke en visningsinnstilling.
+- **Dev-mode** — en chip-toggle som viser Historikk-fanen med kunstig genererte disker og runder (`generateDevData()`) i stedet for ekte historikk, til bruk for å se hvordan skjermen ser ut med mye data. Bevisst **isolert i et helt eget lagringsrom** (`dgfw-dev:discs`/`dgfw-dev:rounds`, egen `devMode`-flagg under `dgfw:devMode`) — ekte data røres aldri, uansett hvor lenge dev-mode står på.
+- **Kun Historikk påvirkes** — Bag, Ny runde og Oversikt bruker alltid ekte data uavhengig av dev-mode; kun de fem Historikk-relaterte render-funksjonene (`renderHistoryList`, `throwsForDisc`, `renderDiscDetail`, `renderAllRounds`, `renderCompareDiscs`) og `deleteRound()` sjekker `devMode` via de nye hjelperne `activeDiscs()`/`activeRounds()`.
+- **Tydelig merket** — et gult «🧪 Viser testdata»-bånd vises øverst på alle fire Historikk-skjermene (disk-liste, disk-detalj, alle runder, sammenlign) når dev-mode er aktivt, slik at ekte og falsk historikk aldri kan forveksles.
+- Dev-mode forblir på til det skrus manuelt av (ingen automatisk avstenging) — akseptabelt siden det uansett aldri kan påvirke registrering av ekte kast.
+- Genererer 8 falske disker (fordelt på de fire kategoriene) og 30 falske runder spredt over ~4 måneder, med tilfeldig vind/kasttype/nøyaktighet (inkl. en del "usikre" målinger for å teste pkt. 17 sitt filter også). «Generer nye testdata →»-knapp lar deg lage et nytt tilfeldig datasett når som helst mens dev-mode er på.
