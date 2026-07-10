@@ -4,14 +4,8 @@ Samlet backlog, organisert etter prioritet. Ferdigstilte punkter ligger i [imple
 
 ## Prioritet 1 – Analyse og visualisering
 
-- **Utvikling over tid (utvidet)**
-  Dagens trend-badge (siste 5 kast vs. tidligere) kan bygges videre ut med: gjennomsnitt siste 10 kast, sammenligning mot en valgt tidligere periode, personlig rekord per disk, beste måned, egen trendgraf (linje over tid) i tillegg til dagens stolpediagram.
-
-- **Median i tillegg til snitt**
-  Median er mer robust mot GPS-uteliggere enn gjennomsnitt, og ville gitt et mer troverdig "typisk kast"-tall per disk i disk-detaljvisningen.
-
-- **Merk usikre målinger**
-  Bruker man "Bruk nåværende posisjon likevel" ved dårlig GPS-nøyaktighet, lagres kastet i dag uten spor av at målingen var usikker. Lagre nøyaktigheten (`coords.accuracy`) per kast, vis et lite merke i historikken/detaljvisningen, og vurder mulighet til å filtrere bort upresise kast fra statistikken.
+- **Utvikling over tid (resten)**
+  Personlig rekord, beste måned og en egen trendgraf (linje over tid) er nå implementert i disk-detaljvisningen (se implementert.md). Gjenstår: gjennomsnitt siste 10 kast som egen stat (i dag kun "siste 5 vs. tidligere"-trenden), og sammenligning mot en *valgt* tidligere periode (krever ny UI for periodevalg, f.eks. datovelger — finnes ikke i appen i dag).
 
 - **Slett/korriger enkeltkast**
   I dag kan man kun slette en hel runde, ikke ett enkelt feilmålt kast. Én dårlig GPS-måling forurenser statistikken permanent inntil hele runden slettes.

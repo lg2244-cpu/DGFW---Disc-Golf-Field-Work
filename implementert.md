@@ -58,6 +58,7 @@ Nytt lag mellom Bag og runde-registrering: en **session** låser utgangspunkt *o
 - Rundevelgeren (`screen-round`) har fått en «Rediger utgangspunkt/sikteretning»-knapp (kaller `editSessionPosition()`) og en «Avslutt session»-knapp (`endSession()`). Redigering midt i en runde med allerede registrerte kast varsler først og nullstiller de kastene (siden de er beregnet fra det gamle utgangspunktet og blir ugyldige).
 - **Vind flyttet fra sesjon- til rundenivå** — chippene sitter nå på rundevelgeren i stedet for utgangspunkt-skjermen, siden forholdene kan endre seg over en lengre økt selv om posisjonen ikke gjør det.
 - Diskvalget (`selectedForRound`) beholdes bevisst mellom runder i samme session (nullstilles kun ved helt ny session) — vanligvis vil man teste samme disker om igjen. `resetRound()` (Ny runde-knappen på Oversikt) nullstiller derfor bare kast/vind, ikke diskvalget eller selve sesjonen.
+- Kun in-memory, som resten av GPS-tilstanden — en session overlever ikke at appen lukkes/refreshes.
 
 ## 13. UI-finpuss fra brukertesting
 - Diskrader i rundevelgeren er nå klikkbare i hele bredden (var kun avhukingsboksen før).
@@ -75,4 +76,11 @@ Funnet ved full manuell gjennomgang av appen:
 
 ## 16. Sikkerhetskopi av alt (eksporter/importer disker+runder)
 To knapper i Historikk-fanen: «Sikkerhetskopi →» laster ned én JSON-fil med alle disker og alle runder (`exportAllData()`). «Gjenopprett →» leser en valgt fil (`importAllDataFromText()`) og **erstatter** alt i appen med innholdet — ikke en sammenslåing som disk-import i pkt. 11, siden dette er ment som gjenoppretting fra et øyeblikksbilde, ikke å legge til flere disker. Varsler med antall disker/runder før og etter og krever bekreftelse siden det ikke kan angres. Validerer at filen er gyldig JSON med `discs`/`rounds`-arrays før noe skjer, kjører `migrateDiscTypes()` på det gjenopprettede innholdet i tilfelle backupen er fra før 4-kategori-omleggingen, og beregner `nextId` på nytt.
-- Kun in-memory, som resten av GPS-tilstanden — en session overlever ikke at appen lukkes/refreshes.
+
+## 17. Median, merking av usikre målinger, og utvidet trendvisning i disk-detalj
+- **Median** — femte stat-boks ved siden av Kast/Lengst/Snitt/Spredning, mer robust mot GPS-uteliggere enn gjennomsnitt.
+- **Nøyaktighet lagret per kast** — `confirmThrow()` lagrer nå `coords.accuracy` på hvert kast, ført gjennom `maybeSaveRound()` og `throwsForDisc()`. Kast med nøyaktighet dårligere enn `ACCURACY_GOOD_M` (7 m) merkes med «±Xm usikker» i kastlisten i disk-detalj. Ny filter-chip «Skjul upresise kast (>7 m)» (`detailHideImprecise`) utelater dem fra både statistikk og liste når aktivert.
+- **Personlig rekord** — det lengste kastet i (filtrert) utvalg merkes med «PR» i kastlisten.
+- **Beste måned** — grupperer kastene per kalendermåned og viser måneden med høyest snittavstand som egen chip, kun når data spenner over minst to måneder.
+- **Trendgraf** — ny `buildTrendLineSVG()`-funksjon tegner en linje over tid (avstand per kast, kronologisk) i en egen boks over stolpediagrammet, som supplement til det (ikke erstatning). Vises kun ved ≥2 kast.
+- Gjenstår i TODO.md: eget snitt for siste 10 kast, og sammenligning mot en brukervalgt tidligere periode (krever ny periodevelger-UI).
