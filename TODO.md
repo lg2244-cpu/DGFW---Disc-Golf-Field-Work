@@ -5,7 +5,7 @@ Samlet backlog, organisert etter prioritet. Ferdigstilte punkter ligger i [imple
 ## Prioritet 1 – Analyse og visualisering
 
 - **Utvikling over tid (resten)**
-  Personlig rekord, beste måned og en egen trendgraf (linje over tid) er nå implementert i disk-detaljvisningen (se implementert.md). Gjenstår: gjennomsnitt siste 10 kast som egen stat (i dag kun "siste 5 vs. tidligere"-trenden), og sammenligning mot en *valgt* tidligere periode (krever ny UI for periodevalg, f.eks. datovelger — finnes ikke i appen i dag).
+  Personlig rekord, beste måned og en egen trendgraf (linje over tid) er nå implementert i disk-detaljvisningen (se implementert.md). Gjenstår: gjennomsnitt siste 10 kast som egen stat (i dag kun "siste 5 vs. tidligere"-trenden), og sammenligning mot alle tidligere kast (i stedet for en valgt periode — dropper behovet for en egen datovelger-UI, enklere å bygge).
 
 - **Slett/korriger enkeltkast**
   I dag kan man kun slette en hel runde, ikke ett enkelt feilmålt kast. Én dårlig GPS-måling forurenser statistikken permanent inntil hele runden slettes.
