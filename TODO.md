@@ -7,8 +7,8 @@ Samlet backlog, organisert etter prioritet. Ferdigstilte punkter ligger i [imple
 - **Slett/korriger enkeltkast**
   I dag kan man kun slette en hel runde, ikke ett enkelt feilmålt kast. Én dårlig GPS-måling forurenser statistikken permanent inntil hele runden slettes.
 
-- **Kartvisning i Oversikt/Statistikk (historiske kast)**
-  Kartvisningen (se implementert.md punkt 26) finnes i dag kun for kastet som akkurat registreres, siden eldre lagrede runder mangler lat/lon. Nå som nye kast lagrer koordinater, kan et tilsvarende kart bygges for historiske kast i Oversikt/disk-detalj etter hvert som nok data samler seg opp — ingen datamigrering nødvendig, bare vent til det finnes ferske runder å vise.
+- **Kartvisning for historiske runder i Statistikk**
+  Kartvisningen (se implementert.md punkt 26-27) finnes i dag i kastregistrering og Oversikt for *gjeldende* runde, siden eldre lagrede runder mangler lat/lon. Nå som nye runder lagrer koordinater, kan et tilsvarende kart bygges for historiske runder i "Alle runder"/disk-detalj etter hvert som nok data samler seg opp — ingen datamigrering nødvendig, bare vent til det finnes ferske runder å vise. Kastkart (disk-detalj) er bevisst holdt utenfor uansett, se implementert.md punkt 27.
 
 - **Automatisk analyse av disker**
   La appen selv beskrive hvordan en disk oppfører seg, f.eks. "mest stabil i motvind", "størst spredning", "minst sideavvik", "lengst i medvind", "mest konsistent". Bygger videre på eksisterende vind/kasttype-filtrering i disk-detalj.

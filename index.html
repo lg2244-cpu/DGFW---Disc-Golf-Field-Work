@@ -571,10 +571,10 @@
           <button class="btn btn-ghost btn-small" id="throw-override-btn" style="margin-top:8px; margin-bottom:0; display:none;" onclick="confirmThrow()">Bruk nåværende posisjon likevel</button>
 
           <div class="viz-toggle" id="throw-viz-toggle" style="display:none;">
-            <button type="button" class="viz-toggle-btn active" data-viz="corridor" onclick="setThrowViz('corridor')">Diagram</button>
-            <button type="button" class="viz-toggle-btn" data-viz="map" onclick="setThrowViz('map')">Kart</button>
+            <button type="button" class="viz-toggle-btn" data-viz="corridor" onclick="setThrowViz('corridor')">Diagram</button>
+            <button type="button" class="viz-toggle-btn active" data-viz="map" onclick="setThrowViz('map')">Kart</button>
           </div>
-          <div class="corridor-wrap" id="throw-corridor"></div>
+          <div class="corridor-wrap" id="throw-corridor" style="display:none;"></div>
           <div class="corridor-wrap" id="throw-map" style="display:none;"></div>
           <p class="empty-note" id="throw-viz-caption" style="text-align:center; margin-top:4px;">Loddrett = kastelengde fra utgangspunktet, vannrett = sideavvik (V/H) fra siktelinjen</p>
 
@@ -596,8 +596,13 @@
     <!-- SCREEN: OVERSIKT (gjeldende runde) -->
     <section class="screen" id="screen-summary">
       <h2 class="screentitle">Oversikt · Denne runden</h2>
+      <div class="viz-toggle" id="summary-viz-toggle">
+        <button type="button" class="viz-toggle-btn" data-viz="corridor" onclick="setSummaryViz('corridor')">Diagram</button>
+        <button type="button" class="viz-toggle-btn active" data-viz="map" onclick="setSummaryViz('map')">Kart</button>
+      </div>
       <div class="corridor-wrap" id="summary-corridor"></div>
-      <p class="empty-note" style="text-align:center; margin:4px 0 14px;">Loddrett = kastelengde fra utgangspunktet, vannrett = sideavvik (V/H) fra siktelinjen — hver prikk er én disk</p>
+      <div class="corridor-wrap" id="summary-map" style="display:none;"></div>
+      <p class="empty-note" id="summary-viz-caption" style="text-align:center; margin:4px 0 14px;">Loddrett = kastelengde fra utgangspunktet, vannrett = sideavvik (V/H) fra siktelinjen — hver prikk er én disk</p>
       <div class="stat-row" id="stat-row"></div>
       <div id="summary-list"></div>
       <button class="btn btn-primary" style="margin-top:8px;" onclick="resetRound()">Ny runde</button>
@@ -775,8 +780,8 @@
 // ---------- APP-VERSJON ----------
 // Bump APP_VERSION og sett APP_UPDATED_AT til pushe-tidspunktet (lokal tid) ved hver endring —
 // sammen med CACHE_NAME i service-worker.js. Vises nederst i Innstillinger.
-const APP_VERSION = 19;
-const APP_UPDATED_AT = '2026-07-10T19:42:00+02:00';
+const APP_VERSION = 20;
+const APP_UPDATED_AT = '2026-07-10T19:58:00+02:00';
 
 // ---------- STATE ----------
 const COLORS = ["#FF6A39","#D8C25A","#5FA88A","#3B3B3B","#7C8AC8","#C25C5C"];
@@ -810,9 +815,9 @@ let detailWindFilter = null; // filter i disk-detalj: 'med'|'mot'|'side'|null
 let detailThrowTypeFilter = null; // filter i disk-detalj: 'hyzer'|'anhyzer'|'flatt'|null
 let detailHideImprecise = false; // filter i disk-detalj: skjul kast med accuracy > ACCURACY_GOOD_M
 let devMode = false; // når true: Statistikk-fanen viser devDiscs/devRounds i stedet for ekte discs/rounds
-let throwVizMode = 'corridor'; // 'corridor'|'map' — valgt visning for kastet som akkurat er registrert
+let throwVizMode = 'map'; // 'corridor'|'map' — valgt visning for kastet som akkurat er registrert
+let summaryVizMode = 'map'; // 'corridor'|'map' — valgt visning for Oversikt
 let lastThrowCoords = null; // {lat,lon} for kastet som akkurat er registrert, til kartvisningen
-let throwLeafletMap = null; // Leaflet-instans for kartvisningen, må fjernes (remove()) før den lages på nytt
 let devDiscs = []; // kunstige disker, helt isolert fra ekte discs (egen localStorage-nøkkel)
 let devRounds = []; // kunstige runder, helt isolert fra ekte rounds
 
@@ -1636,8 +1641,9 @@ function selectDiscToRegister(discId){
   document.getElementById('throw-distance').textContent = '–';
   document.getElementById('throw-lateral-wrap').innerHTML = '';
   document.getElementById('throw-corridor').innerHTML = buildCorridorSVG([]);
+  document.getElementById('throw-corridor').style.display = 'block';
+  document.getElementById('throw-map').style.display = 'none';
   lastThrowCoords = null;
-  setThrowViz('corridor');
   document.getElementById('throw-viz-toggle').style.display = 'none';
   document.getElementById('throw-capture-btn').style.display = 'block';
   document.getElementById('throw-next-wrap').style.display = 'none';
@@ -1679,7 +1685,7 @@ function confirmThrow(){
 
   lastThrowCoords = {lat:coords.latitude, lon:coords.longitude};
   document.getElementById('throw-viz-toggle').style.display = 'flex';
-  setThrowViz('corridor');
+  setThrowViz('map');
   document.getElementById('throw-distance').textContent = distance.toFixed(1);
   document.getElementById('throw-corridor').innerHTML = buildCorridorSVG([{x:lateral||0, y:along, color:disc.color}]);
 
@@ -1707,8 +1713,33 @@ function afterThrowContinue(){
 }
 
 // ---------- KARTVISNING (siktepunkt vs. landingspunkt) ----------
-// Kun mulig for kastet som akkurat er registrert — appen lagrer ikke lat/lon for eldre kast
-// registrert før denne funksjonen fantes, så et historisk kart kan ikke rekonstrueres i ettertid.
+// Delt av kastregistrering (ett kast) og Oversikt (alle kast i runden) — begge deler samme
+// utgangspunkt/siktelinje for denne økten. Kun mulig for kast som har lat/lon lagret (fra og med
+// implementert.md punkt 26) — eldre kast/runder mangler dette og kan ikke vises på et ekte kart.
+const activeLeafletMaps = {}; // innerId -> Leaflet map-instans, må fjernes (remove()) før ny lages i samme container
+function renderPointsMap(mapWrapId, innerId, origin, points, emptyMsg){
+  const mapWrap = document.getElementById(mapWrapId);
+  if(!origin || points.length===0){
+    if(activeLeafletMaps[innerId]){ activeLeafletMaps[innerId].remove(); delete activeLeafletMaps[innerId]; }
+    mapWrap.innerHTML = `<p class="empty-note" style="text-align:center; padding:30px 0;">${emptyMsg}</p>`;
+    return;
+  }
+  if(activeLeafletMaps[innerId]){ activeLeafletMaps[innerId].remove(); delete activeLeafletMaps[innerId]; }
+  mapWrap.innerHTML = `<div class="throw-map-inner" id="${innerId}"></div>`;
+  const map = L.map(innerId, {zoomControl:false, attributionControl:false});
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19}).addTo(map);
+  const originLL = [origin.lat, origin.lon];
+  L.circleMarker(originLL, {radius:8, color:'#8A6410', weight:2, fillColor:'#D8C25A', fillOpacity:1}).addTo(map);
+  const bounds = [originLL];
+  points.forEach(p=>{
+    const landingLL = [p.lat, p.lon];
+    L.circleMarker(landingLL, {radius:8, color:'#10241A', weight:2, fillColor:p.color, fillOpacity:1}).addTo(map);
+    L.polyline([originLL, landingLL], {color:'#57685D', weight:2, dashArray:'5 6'}).addTo(map);
+    bounds.push(landingLL);
+  });
+  activeLeafletMaps[innerId] = map;
+  map.fitBounds(bounds, {padding:[30,30]});
+}
 function setThrowViz(mode){
   throwVizMode = mode;
   document.querySelectorAll('#throw-viz-toggle .viz-toggle-btn').forEach(b=>{
@@ -1718,25 +1749,32 @@ function setThrowViz(mode){
   document.getElementById('throw-map').style.display = mode==='map' ? 'block' : 'none';
   document.getElementById('throw-viz-caption').textContent = mode==='corridor'
     ? 'Loddrett = kastelengde fra utgangspunktet, vannrett = sideavvik (V/H) fra siktelinjen'
-    : 'Gult punkt = utgangspunkt (siktepunkt), oransje punkt = hvor kastet landet';
+    : 'Gult punkt = utgangspunkt, farget punkt = hvor kastet landet';
   if(mode==='map') renderThrowMap();
 }
 function renderThrowMap(){
-  const mapWrap = document.getElementById('throw-map');
-  if(!lastThrowCoords || !startpoint){
-    mapWrap.innerHTML = '<p class="empty-note" style="text-align:center; padding:30px 0;">Kart krever GPS-posisjon for både utgangspunkt og kast.</p>';
-    return;
-  }
-  if(throwLeafletMap){ throwLeafletMap.remove(); throwLeafletMap = null; }
-  mapWrap.innerHTML = '<div class="throw-map-inner" id="throw-map-inner"></div>';
-  const origin = [startpoint.lat, startpoint.lon];
-  const landing = [lastThrowCoords.lat, lastThrowCoords.lon];
-  throwLeafletMap = L.map('throw-map-inner', {zoomControl:false, attributionControl:false});
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19}).addTo(throwLeafletMap);
-  L.circleMarker(origin, {radius:8, color:'#8A6410', weight:2, fillColor:'#D8C25A', fillOpacity:1}).addTo(throwLeafletMap);
-  L.circleMarker(landing, {radius:8, color:'#B8401B', weight:2, fillColor:'#FF6A39', fillOpacity:1}).addTo(throwLeafletMap);
-  L.polyline([origin, landing], {color:'#57685D', weight:2, dashArray:'5 6'}).addTo(throwLeafletMap);
-  throwLeafletMap.fitBounds([origin, landing], {padding:[30,30]});
+  const disc = discs.find(d=>d.id===currentDiscId);
+  const points = (lastThrowCoords && disc) ? [{lat:lastThrowCoords.lat, lon:lastThrowCoords.lon, color:disc.color}] : [];
+  renderPointsMap('throw-map', 'throw-map-inner', startpoint, points, 'Kart krever GPS-posisjon for både utgangspunkt og kast.');
+}
+function setSummaryViz(mode){
+  summaryVizMode = mode;
+  document.querySelectorAll('#summary-viz-toggle .viz-toggle-btn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.viz===mode);
+  });
+  document.getElementById('summary-corridor').style.display = mode==='corridor' ? 'block' : 'none';
+  document.getElementById('summary-map').style.display = mode==='map' ? 'block' : 'none';
+  document.getElementById('summary-viz-caption').textContent = mode==='corridor'
+    ? 'Loddrett = kastelengde fra utgangspunktet, vannrett = sideavvik (V/H) fra siktelinjen — hver prikk er én disk'
+    : 'Gult punkt = utgangspunkt, hver farget prikk = én disk sin landingsplass';
+  if(mode==='map') renderSummaryMap();
+}
+function renderSummaryMap(){
+  const points = results.filter(r=>r.lat!=null && r.lon!=null).map(r=>{
+    const disc = discs.find(d=>d.id===r.discId);
+    return {lat:r.lat, lon:r.lon, color:disc.color};
+  });
+  renderPointsMap('summary-map', 'summary-map-inner', startpoint, points, 'Kart krever GPS-posisjon for utgangspunkt og minst ett kast.');
 }
 
 // ---------- CORRIDOR SVG (delt visualisering) ----------
@@ -1804,6 +1842,7 @@ function renderSummary(){
     return {x: r.lateral||0, y: r.along, color: disc.color};
   });
   document.getElementById('summary-corridor').innerHTML = buildCorridorSVG(corridorPoints);
+  setSummaryViz(summaryVizMode);
 
   document.getElementById('stat-row').innerHTML = `
     <div class="stat-box"><div class="stat-num">${longest.toFixed(0)}</div><div class="stat-label">Lengst</div></div>

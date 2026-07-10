@@ -152,3 +152,13 @@ Ny veksleknapp ("Diagram"/"Kart") ved siden av korridor-SVG-en i kastregistrerin
 - **Datamodell-utvidelse**: appen lagret tidligere *ingen* faktiske GPS-koordinater — kun lokale meter (avstand/sideavvik) relativt til utgangspunktet. Hvert kast får nå også `lat`/`lon` (satt i `confirmThrow()`), og hver lagret runde får `startpoint` (`{lat, lon}`, satt i `maybeSaveRound()`). Eldre runder mangler disse feltene — helt ufarlig, siden ingen eksisterende kode leser dem.
 - **Bevisst avgrenset**: kartet kan derfor kun vises for kastet som *akkurat* er registrert (live GPS-fiks tilgjengelig i `lastThrowCoords`), ikke for historiske kast i Oversikt/Statistikk — de manglet lat/lon frem til nå. Fremtidige kast får dataen lagret, så en historisk kartvisning kan bygges senere uten datamigrering.
 - Verifisert i preview med simulert GPS (dev-mode, se punkt 22): bekreftet at kartfliser faktisk hentes (4 nettverkskall til `tile.openstreetmap.org`, alle 200 OK), at begge markører + linje tegnes riktig, og at `startpoint`/`lat`/`lon` faktisk persisteres korrekt på en lagret runde.
+
+## 27. Kartvisning i Oversikt også, og kart som standardvisning
+
+Utvidet punkt 26 til alle stedene appen viser en siktelinje (bruker ba om «alle steder», og at kart skal være default fremfor diagrammet):
+
+- **Delt kart-funksjon**: kartlogikken i punkt 26 var skrevet spesifikt for ett kast — brutt ut til en gjenbrukbar `renderPointsMap(mapWrapId, innerId, origin, points, emptyMsg)` som tar imot en liste med punkter i stedet for ett enkelt. Både kastregistrering og Oversikt kaller nå denne samme funksjonen.
+- **Oversikt** (`screen-summary`) fikk samme "Diagram"/"Kart"-veksleknapp som kastregistrering, med ett landingspunkt per disk i runden — alle med felles utgangspunkt siden de deler samme økt. Fargekodet per disk, akkurat som korridor-SVG-en gjør i dag.
+- **Kart er nå standard** begge steder (`throwVizMode`/`summaryVizMode` starter på `'map'`) — diagrammet er fortsatt tilgjengelig ved trykk på "Diagram", men brukeren må aktivt velge det bort nå, ikke motsatt.
+- **Bevisst holdt utenfor**: Kastkart i disk-detalj (aggregerer kast på tvers av mange ulike økter/utgangspunkt) fikk *ikke* kartvisning — avklart med bruker, siden den visningen normaliserer bort den fysiske plasseringen med vilje for å kunne sammenligne kast fra ulike steder, og har ingen felles siktelinje å tegne på et ekte kart.
+- Verifisert i preview med simulert GPS: bekreftet kart vises som standard med riktig antall markører/linjer i begge skjermer (1 kast → 3 elementer, 2 kast i Oversikt → 5 elementer), at kartflisen faktisk lastet (`naturalWidth: 256`, `complete: true`), og at veksling til diagram og tilbake fungerer.
