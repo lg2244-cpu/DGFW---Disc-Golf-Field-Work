@@ -313,6 +313,26 @@
   }
   .history-date{color:var(--slate);}
 
+  /* --- bag-rapportkort --- */
+  .report-table{width:100%; border-collapse:collapse; font-size:12px;}
+  .report-table th{
+    text-align:left; font-size:9.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--slate);
+    font-weight:700; padding:0 6px 8px;
+  }
+  .report-table td{padding:10px 6px; border-top:1px solid var(--line); vertical-align:middle;}
+  .report-rank{font-weight:800; color:var(--slate); width:16px; font-family:'Space Mono',monospace;}
+  .report-disc-cell{display:flex; align-items:center; gap:8px;}
+  .report-swatch{width:14px; height:14px; border-radius:50%; flex-shrink:0; box-shadow:inset 0 0 0 1.5px rgba(0,0,0,.12);}
+  .report-name{font-weight:700; color:var(--forest-dark); line-height:1.2;}
+  .report-type{font-size:9.5px; color:var(--slate); text-transform:uppercase; letter-spacing:.03em;}
+  .report-num{text-align:right; font-weight:700; color:var(--forest-dark); white-space:nowrap; font-family:'Space Mono',monospace;}
+  .report-badge{
+    display:inline-block; font-size:8.5px; font-weight:800; text-transform:uppercase; letter-spacing:.04em;
+    padding:2px 6px; border-radius:8px; margin-top:2px;
+  }
+  .report-badge-orange{background:rgba(255,106,57,0.16); color:var(--disc-orange-ink);}
+  .report-badge-green{background:rgba(47,107,79,0.16); color:var(--fairway);}
+
   /* --- bottom nav --- */
   nav.tabbar{
     flex-shrink:0; display:flex; border-top:1px solid var(--line);
@@ -534,6 +554,7 @@
     <section class="screen" id="screen-history">
       <h2 class="screentitle">Statistikk · Per disk</h2>
       <div class="btn-row" id="history-links" style="margin-top:0; margin-bottom:6px;">
+        <button class="btn btn-secondary btn-small" style="margin-bottom:0;" onclick="showBagReport()">Bag-rapportkort →</button>
         <button class="btn btn-secondary btn-small" style="margin-bottom:0;" onclick="showAllRounds()">Alle runder →</button>
         <button class="btn btn-secondary btn-small" style="margin-bottom:0;" onclick="showCompareDiscs()">Sammenlign disker →</button>
       </div>
@@ -556,9 +577,19 @@
       </div>
       <div class="stat-row" id="detail-stat-row"></div>
       <div id="detail-extra-stats"></div>
+      <div id="detail-kastkart"></div>
       <div id="detail-trendline"></div>
       <div id="detail-chart"></div>
       <div id="detail-list"></div>
+    </section>
+
+    <!-- SCREEN: BAG-RAPPORTKORT -->
+    <section class="screen" id="screen-bagreport">
+      <button class="btn btn-ghost btn-small" onclick="showTab('history')">← Tilbake</button>
+      <h2 class="screentitle">Bag-rapportkort</h2>
+      <p class="dev-banner" id="bagreport-dev-banner" style="display:none;">🧪 Viser testdata — dev-mode er på (skru av i Innstillinger)</p>
+      <p class="empty-note" style="margin-bottom:12px;">Hele bagen rangert etter snittavstand, med spredning og de siste 8 kastenes trend per disk.</p>
+      <div id="bagreport-list"></div>
     </section>
 
     <!-- SCREEN: ALLE RUNDER (slett runde) -->
@@ -1694,6 +1725,7 @@ function renderDiscDetail(){
   if(allForDisc.length===0){
     document.getElementById('detail-stat-row').innerHTML = '';
     document.getElementById('detail-extra-stats').innerHTML = '';
+    document.getElementById('detail-kastkart').innerHTML = '';
     document.getElementById('detail-trendline').innerHTML = '';
     document.getElementById('detail-chart').innerHTML = '';
     document.getElementById('detail-list').innerHTML = '<p class="empty-note">Ingen runder registrert for denne disken ennå. Fullfør en runde med denne disken for å se historikk her.</p>';
@@ -1710,6 +1742,7 @@ function renderDiscDetail(){
   if(all.length===0){
     document.getElementById('detail-stat-row').innerHTML = '';
     document.getElementById('detail-extra-stats').innerHTML = '';
+    document.getElementById('detail-kastkart').innerHTML = '';
     document.getElementById('detail-trendline').innerHTML = '';
     document.getElementById('detail-chart').innerHTML = '';
     document.getElementById('detail-list').innerHTML = '<p class="empty-note">Ingen kast matcher valgt filter.</p>';
@@ -1775,6 +1808,16 @@ function renderDiscDetail(){
   document.getElementById('detail-extra-stats').innerHTML = chipsHtml
     ? `<div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px;">${chipsHtml}</div>` : '';
 
+  // Kastkart — samler ALLE (filtrerte) kast for disken i ett spredningsplott, på tvers av runder.
+  // lateral/along er allerede meter-relativt til hver runde sin egen siktelinje, så de kan
+  // trygt overlegges her selv om kastene kom fra ulike fysiske utgangspunkt/sesjoner.
+  const kastkartPoints = all.map(t=>({x:t.lateral||0, y:t.along!=null?t.along:t.distance, color:disc.color}));
+  document.getElementById('detail-kastkart').innerHTML = `
+    <span class="chip-select-label" style="margin-top:0;">Kastkart — alle kast, denne disken</span>
+    <div class="corridor-wrap">${buildCorridorSVG(kastkartPoints)}</div>
+    <p class="empty-note" style="text-align:center; margin:4px 0 14px;">${all.length} kast samlet på tvers av alle runder — loddrett er kastelengde, vannrett er sideavvik (V/H)</p>
+  `;
+
   document.getElementById('detail-trendline').innerHTML = chronological.length>=2
     ? `<div style="background:var(--chalk-dim); border:1px solid var(--line); border-radius:14px; padding:10px 8px 6px; margin-bottom:14px;">
          <div class="chip-select-label" style="margin:0 0 6px 4px;">Trend over tid (kastelengde, eldste → nyeste)</div>
@@ -1809,6 +1852,82 @@ function renderDiscDetail(){
     const impreciseTxt = (t.accuracy!=null && t.accuracy>ACCURACY_GOOD_M) ? ' · <span style="color:var(--disc-orange-ink);">±' + Math.round(t.accuracy) + 'm usikker</span>' : '';
     return `<div class="history-entry"><span class="history-date">${formatDate(t.date)}</span><span>${t.distance.toFixed(1)} m${latTxt}${typeTxt}${prTxt}${impreciseTxt}</span></div>`;
   }).join('');
+}
+
+// ---------- BAG-RAPPORTKORT ----------
+function buildSparklineSVG(distances, color){
+  const w=52, h=20, pad=3;
+  if(distances.length<2){
+    return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><circle cx="${w-pad}" cy="${h/2}" r="2.2" fill="${color}"/></svg>`;
+  }
+  const min = Math.min(...distances), max = Math.max(...distances);
+  const range = Math.max(max-min, 1);
+  const stepX = (w-pad*2)/(distances.length-1);
+  const coords = distances.map((v,i)=>({
+    x: pad+i*stepX,
+    y: h-pad-((v-min)/range)*(h-pad*2)
+  }));
+  const points = coords.map(c=>c.x.toFixed(1)+','+c.y.toFixed(1)).join(' ');
+  const last = coords[coords.length-1];
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+    <polyline points="${points}" fill="none" stroke="${color}" stroke-width="1.6"/>
+    <circle cx="${last.x.toFixed(1)}" cy="${last.y.toFixed(1)}" r="2.2" fill="${color}"/>
+  </svg>`;
+}
+function showBagReport(){
+  renderBagReport();
+  showScreen('screen-bagreport');
+}
+function renderBagReport(){
+  const wrap = document.getElementById('bagreport-list');
+  document.getElementById('bagreport-dev-banner').style.display = devMode ? 'block' : 'none';
+  const discsNow = activeDiscs();
+  if(discsNow.length===0){
+    wrap.innerHTML = '<p class="empty-note">Ingen disker i registeret ennå.</p>';
+    return;
+  }
+  const rows = discsNow.map(d=>{
+    const t = throwsForDisc(d.id);
+    const chronological = t.slice().sort((a,b)=> new Date(a.date) - new Date(b.date));
+    const distances = chronological.map(x=>x.distance);
+    const avg = distances.length ? distances.reduce((a,b)=>a+b,0)/distances.length : null;
+    const spread = distances.length ? stddev(distances) : null;
+    const last8 = distances.slice(-8);
+    return {disc:d, count:t.length, avg, spread, last8};
+  });
+  const withThrows = rows.filter(r=>r.count>0).sort((a,b)=>b.avg-a.avg);
+  const withoutThrows = rows.filter(r=>r.count===0);
+  const longestId = withThrows.length ? withThrows[0].disc.id : null;
+  const consistencyCandidates = withThrows.filter(r=>r.count>=3);
+  let mostConsistentId = null;
+  if(consistencyCandidates.length){
+    mostConsistentId = consistencyCandidates.reduce((best,r)=> r.spread<best.spread ? r : best).disc.id;
+  }
+  const ranked = withThrows.concat(withoutThrows);
+
+  const bodyRows = ranked.map((r,i)=>{
+    const badges = [];
+    if(r.disc.id===longestId) badges.push('<span class="report-badge report-badge-orange">Lengst</span>');
+    if(r.disc.id===mostConsistentId) badges.push('<span class="report-badge report-badge-green">Mest konsistent</span>');
+    const numsHtml = r.count>0
+      ? `<td class="report-num">${r.avg.toFixed(0)} m</td><td class="report-num" style="color:var(--slate); font-weight:400;">${r.spread.toFixed(1)}</td><td>${buildSparklineSVG(r.last8, r.disc.color)}</td>`
+      : `<td class="report-num" colspan="3" style="text-align:left; color:var(--slate); font-weight:400; font-family:inherit;">Ingen kast ennå</td>`;
+    return `<tr>
+      <td class="report-rank">${i+1}</td>
+      <td class="report-disc-cell">
+        <span class="report-swatch" style="background:${r.disc.color}"></span>
+        <div><div class="report-name">${r.disc.name}</div><div class="report-type">${r.disc.type}</div>${badges.join('')}</div>
+      </td>
+      ${numsHtml}
+    </tr>`;
+  }).join('');
+
+  wrap.innerHTML = `
+    <table class="report-table">
+      <thead><tr><th>#</th><th>Disk</th><th style="text-align:right;">Snitt</th><th style="text-align:right;">±</th><th>Trend</th></tr></thead>
+      <tbody>${bodyRows}</tbody>
+    </table>
+  `;
 }
 
 // ---------- SAMMENLIGN DISKER ----------

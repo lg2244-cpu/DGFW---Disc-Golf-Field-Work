@@ -10,9 +10,6 @@ Samlet backlog, organisert etter prioritet. Ferdigstilte punkter ligger i [imple
 - **Slett/korriger enkeltkast**
   I dag kan man kun slette en hel runde, ikke ett enkelt feilmålt kast. Én dårlig GPS-måling forurenser statistikken permanent inntil hele runden slettes.
 
-- **Kastkart**
-  Vis alle kast for en disk ovenfra i ett samlet kart (utvidelse av dagens korridor-SVG, som i dag kun viser én runde av gangen), for å se spredning, høyre/venstre-tendens og konsistens visuelt på tvers av alle runder. Kan bygges som SVG, samme mønster som `buildCorridorSVG()`.
-
 - **Kartvisning i bakgrunnen (siktepunkt vs. landingspunkt)**
   Vis telefonens native kart (Apple Maps for iOS / Android SDK for Android, for å unngå lisenskostnader og forenkle oppsett) bak målepunktene, sentrert og zoomet (bounding box) etter kastets GPS-koordinater. Plasser to unike markører — siktepunkt og landingspunkt — og tegn en linje (polyline) mellom dem for å visualisere avviket.
 

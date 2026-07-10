@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dgfw-v13';
+const CACHE_NAME = 'dgfw-v14';
 const ASSETS = [
   './',
   './index.html',

@@ -103,3 +103,10 @@ Alle tre grafene i appen hadde tidligere ingen synlige akser eller forklaring �
 - **Trendgrafen** (`buildTrendLineSVG()`) — fikk samme type Y-akse (maks/min-verdi) og X-akse (eldste/nyeste dato) tegnet direkte inn i SVG-en, med en grunnlinje for referanse.
 
 Resultatlistene (Oversikt, Sammenlign disker) rørt ikke — disse viser allerede eksplisitte tall/enheter direkte i teksten, ikke bare en visuell stolpe, og ble vurdert som allerede utvetydige.
+
+## 20. Kastkart per disk (alle runder) og Bag-rapportkort
+
+To nye visninger i Statistikk-fanen, valgt ut fra en mockup-runde med brukeren (5-6 alternative statistikk-konsepter ble skissert som Claude-artifacts, ikke i selve appen — disse to ble valgt for reell implementasjon):
+
+- **Kastkart i disk-detalj** (`detail-kastkart`) — samler *alle* (filtrerte) kast for disken i ett spredningsplott, på tvers av alle runder/sesjoner, i stedet for kun én runde av gangen. Gjenbruker `buildCorridorSVG()` uendret: `lateral`/`along` er allerede lagret meter-relativt til hver runde sin egen siktelinje, så punkter fra ulike fysiske utgangspunkt kan trygt overlegges i samme koordinatsystem. Vises mellom stat-boksene og trendgrafen, med kasteantall i bildeteksten.
+- **Bag-rapportkort** (`screen-bagreport`, nås via egen knapp øverst i Statistikk) — hele bagen rangert etter snittavstand i én tabell: rangering, disknavn/type, snitt, spredning (standardavvik), og en liten sparkline (`buildSparklineSVG()`) over de siste 8 kastenes lengde. To badges fremhever ytterpunkter: «Lengst» (høyest snitt) og «Mest konsistent» (lavest spredning — krever minst 3 kast for å kvalifisere, ellers ville en disk med 1-2 kast vinne på falskt nær-null-avvik). Disker uten kast havner nederst i lista uten tall. Respekterer dev-mode-isolasjonen fra pkt. 18 fullt ut (eget testdata-bånd, bruker `activeDiscs()`/`throwsForDisc()`).
