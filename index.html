@@ -473,6 +473,12 @@
         <button class="btn btn-secondary btn-small" style="margin-bottom:0;" onclick="showAllRounds()">Alle runder →</button>
         <button class="btn btn-secondary btn-small" style="margin-bottom:0;" onclick="showCompareDiscs()">Sammenlign disker →</button>
       </div>
+      <div class="btn-row" style="margin-top:0; margin-bottom:10px;">
+        <button class="btn btn-ghost btn-small" style="margin-bottom:0;" onclick="exportAllData()">Sikkerhetskopi →</button>
+        <button class="btn btn-ghost btn-small" style="margin-bottom:0;" onclick="triggerImportAllData()">Gjenopprett →</button>
+        <input type="file" id="import-all-input" accept=".json,application/json" style="display:none;" onchange="handleImportAllDataFile(event)">
+      </div>
+      <p class="empty-note" style="margin:-4px 0 12px;">Sikkerhetskopi laster ned én fil med alle disker og runder (JSON) — til bruk hvis du bytter telefon eller mister data. Gjenopprett erstatter alt du har i appen nå med innholdet i filen.</p>
       <div id="history-disc-list"></div>
     </section>
 
@@ -972,6 +978,67 @@ function importDiscsFromText(text){
   renderBag();
   persistDiscs();
   alert('Import ferdig: ' + added + ' nye disker, ' + updated + ' oppdatert' + (skipped>0 ? ', ' + skipped + ' rader hoppet over (manglet navn/type)' : '') + '.');
+}
+
+// ---------- SIKKERHETSKOPI (alt: disker + runder) ----------
+function exportAllData(){
+  const payload = {
+    app: 'dgfw',
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    discs,
+    rounds
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'dg-field-work-backup-' + new Date().toISOString().slice(0,10) + '.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function triggerImportAllData(){
+  document.getElementById('import-all-input').click();
+}
+function handleImportAllDataFile(evt){
+  const file = evt.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    importAllDataFromText(reader.result);
+    evt.target.value = ''; // slik at samme fil kan velges på nytt senere
+  };
+  reader.readAsText(file);
+}
+function importAllDataFromText(text){
+  let payload;
+  try{
+    payload = JSON.parse(text);
+  }catch(e){
+    alert('Kunne ikke lese filen — den er ikke gyldig JSON.');
+    return;
+  }
+  if(!Array.isArray(payload.discs) || !Array.isArray(payload.rounds)){
+    alert('Filen ser ikke ut som en gyldig DG Field Work-sikkerhetskopi (mangler disker/runder).');
+    return;
+  }
+  const ok = confirm(
+    'Dette erstatter alt du har i appen nå (' + discs.length + ' disker, ' + rounds.length + ' runder) med ' +
+    'innholdet i backupfilen (' + payload.discs.length + ' disker, ' + payload.rounds.length + ' runder). ' +
+    'Dette kan ikke angres. Fortsette?'
+  );
+  if(!ok) return;
+  discs = payload.discs;
+  rounds = payload.rounds;
+  nextId = discs.length ? Math.max(...discs.map(d=>d.id))+1 : 1;
+  migrateDiscTypes(); // i tilfelle backupen er fra før 4-kategori-omleggingen
+  persistDiscs();
+  persistRounds();
+  renderBag();
+  renderHistoryList();
+  alert('Gjenopprettet ' + discs.length + ' disker og ' + rounds.length + ' runder fra sikkerhetskopi.');
 }
 
 // ---------- NY RUNDE ----------

@@ -58,4 +58,21 @@ Nytt lag mellom Bag og runde-registrering: en **session** låser utgangspunkt *o
 - Rundevelgeren (`screen-round`) har fått en «Rediger utgangspunkt/sikteretning»-knapp (kaller `editSessionPosition()`) og en «Avslutt session»-knapp (`endSession()`). Redigering midt i en runde med allerede registrerte kast varsler først og nullstiller de kastene (siden de er beregnet fra det gamle utgangspunktet og blir ugyldige).
 - **Vind flyttet fra sesjon- til rundenivå** — chippene sitter nå på rundevelgeren i stedet for utgangspunkt-skjermen, siden forholdene kan endre seg over en lengre økt selv om posisjonen ikke gjør det.
 - Diskvalget (`selectedForRound`) beholdes bevisst mellom runder i samme session (nullstilles kun ved helt ny session) — vanligvis vil man teste samme disker om igjen. `resetRound()` (Ny runde-knappen på Oversikt) nullstiller derfor bare kast/vind, ikke diskvalget eller selve sesjonen.
+
+## 13. UI-finpuss fra brukertesting
+- Diskrader i rundevelgeren er nå klikkbare i hele bredden (var kun avhukingsboksen før).
+- «Registrer posisjon (GPS)»-knappen i kastregistrering flyttet opp rett under disknavn/type, foran bane-visualiseringen, så den er synlig uten scrolling.
+- Import/eksport av disker byttet fra komma- til semikolon-skilletegn i `.txt`-formatet, siden komma også er vanlig desimaltegn på norsk (f.eks. glide 4,5) — import tåler nå komma som desimaltegn.
+
+## 14. Sticky «fortsett»-knapper
+Alle knapper man må trykke for å komme videre (Start runde, Neste på begge session-skjermene, Fortsett etter et kast, «alle disker registrert»-knappen) er klebende (`position: sticky`) nederst på skjermen, med bakgrunnsfarge som matcher skjermen. Løser samme problem som GPS-knapp-flyttingen i pkt. 13, men generelt for alle skjermer uavhengig av innholdsmengde, i stedet for å måtte flikke skjerm for skjerm.
+
+## 15. Fiks av tre lagrings-/krasjbugs
+Funnet ved full manuell gjennomgang av appen:
+- Kast registrert etter første besøk på Oversikt-fanen ble aldri lagret (`roundSaved` var en engangs-lås). Byttet til `savedRoundId` som oppdaterer samme lagrede runde ved senere besøk.
+- En ferdig runde gikk tapt hvis man startet neste runde eller avsluttet sesjonen uten noen gang å ha vært innom Oversikt. `startRoundInSession()`, `endSession()` og `resetRound()` lagrer nå eventuelle ventende kast før de nullstilles.
+- Sletting av en disk som hadde kast i pågående runde krasjet Oversikt/kastvelgeren (oppslag på slettet disks navn/farge). `deleteDisc()` rydder nå også disken ut av `results`/`throwQueue`/`currentDiscId`.
+
+## 16. Sikkerhetskopi av alt (eksporter/importer disker+runder)
+To knapper i Historikk-fanen: «Sikkerhetskopi →» laster ned én JSON-fil med alle disker og alle runder (`exportAllData()`). «Gjenopprett →» leser en valgt fil (`importAllDataFromText()`) og **erstatter** alt i appen med innholdet — ikke en sammenslåing som disk-import i pkt. 11, siden dette er ment som gjenoppretting fra et øyeblikksbilde, ikke å legge til flere disker. Varsler med antall disker/runder før og etter og krever bekreftelse siden det ikke kan angres. Validerer at filen er gyldig JSON med `discs`/`rounds`-arrays før noe skjer, kjører `migrateDiscTypes()` på det gjenopprettede innholdet i tilfelle backupen er fra før 4-kategori-omleggingen, og beregner `nextId` på nytt.
 - Kun in-memory, som resten av GPS-tilstanden — en session overlever ikke at appen lukkes/refreshes.
