@@ -93,3 +93,13 @@ Ny femte hovedfane «Innstillinger» (`screen-settings`) i bunn-navigasjonen.
 - **Tydelig merket** — et gult «🧪 Viser testdata»-bånd vises øverst på alle fire Historikk-skjermene (disk-liste, disk-detalj, alle runder, sammenlign) når dev-mode er aktivt, slik at ekte og falsk historikk aldri kan forveksles.
 - Dev-mode forblir på til det skrus manuelt av (ingen automatisk avstenging) — akseptabelt siden det uansett aldri kan påvirke registrering av ekte kast.
 - Genererer 8 falske disker (fordelt på de fire kategoriene) og 30 falske runder spredt over ~4 måneder, med tilfeldig vind/kasttype/nøyaktighet (inkl. en del "usikre" målinger for å teste pkt. 17 sitt filter også). «Generer nye testdata →»-knapp lar deg lage et nytt tilfeldig datasett når som helst mens dev-mode er på.
+
+## 19. Historikk → Statistikk, og akser/forklarende tekst på alle grafer
+Fanen «Historikk» (og skjermtitlene «Historikk · Per disk»/«Historikk · Alle runder») hetet fra nå av **«Statistikk»** — kun synlig tekst endret, interne id-er/funksjonsnavn (`screen-history`, `renderHistoryList()`, `data-tab="history"` osv.) er bevisst uendret for å unngå unødvendig risiko ved en ren tekstendring.
+
+Alle tre grafene i appen hadde tidligere ingen synlige akser eller forklaring — bare en visuell form brukeren måtte tolke selv:
+- **Korridor-SVG** (`buildCorridorSVG()`, brukt i kastregistrering og Oversikt) — fikk avstandsskala øverst (maks-verdi), «V»/«H»-merking på sidene, og «Utgangspunkt»-tekst ved startpunkt-sirkelen. En forklarende bildetekst under selve visualiseringen ("Loddrett = kastelengde ..., vannrett = sideavvik ...") ble lagt til begge steder den brukes.
+- **Stolpediagrammet** (kastelengde per registrering i disk-detalj) — fikk en Y-akse (maks-verdi øverst, "0 m" nederst, ny `.chart-yaxis`) og en X-akse (eldste/nyeste dato under, ny `.chart-xaxis`), pluss en overskrift som sier hva grafen faktisk viser.
+- **Trendgrafen** (`buildTrendLineSVG()`) — fikk samme type Y-akse (maks/min-verdi) og X-akse (eldste/nyeste dato) tegnet direkte inn i SVG-en, med en grunnlinje for referanse.
+
+Resultatlistene (Oversikt, Sammenlign disker) rørt ikke — disse viser allerede eksplisitte tall/enheter direkte i teksten, ikke bare en visuell stolpe, og ble vurdert som allerede utvetydige.

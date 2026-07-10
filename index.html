@@ -299,7 +299,13 @@
   .result-bar-fill{height:100%; border-radius:6px;}
   .mini-chip{font-size:10.5px; font-family:'Space Mono',monospace; padding:2px 8px; border-radius:12px;}
 
-  .chart-bars{display:flex; align-items:flex-end; gap:6px; height:var(--chart-h); margin:14px 0 6px;}
+  .chart-row{display:flex; gap:8px; margin:10px 0 2px;}
+  .chart-yaxis{
+    display:flex; flex-direction:column; justify-content:space-between;
+    height:var(--chart-h); font-size:9px; color:var(--slate); flex-shrink:0; text-align:right;
+  }
+  .chart-xaxis{display:flex; justify-content:space-between; font-size:9px; color:var(--slate); margin:2px 0 10px;}
+  .chart-bars{display:flex; align-items:flex-end; gap:6px; height:var(--chart-h); flex:1;}
   .chart-bar{flex:1; border-radius:6px 6px 2px 2px; min-height:4px;}
   .history-entry{
     display:flex; justify-content:space-between; align-items:center;
@@ -497,6 +503,7 @@
           <button class="btn btn-ghost btn-small" id="throw-override-btn" style="margin-top:8px; margin-bottom:0; display:none;" onclick="confirmThrow()">Bruk nåværende posisjon likevel</button>
 
           <div class="corridor-wrap" id="throw-corridor"></div>
+          <p class="empty-note" style="text-align:center; margin-top:4px;">Loddrett = kastelengde fra utgangspunktet, vannrett = sideavvik (V/H) fra siktelinjen</p>
 
           <div class="distance-readout" id="throw-distance">–</div>
           <div class="distance-unit">meter</div>
@@ -516,7 +523,8 @@
     <!-- SCREEN: OVERSIKT (gjeldende runde) -->
     <section class="screen" id="screen-summary">
       <h2 class="screentitle">Oversikt · Denne runden</h2>
-      <div class="corridor-wrap" id="summary-corridor" style="margin-bottom:14px;"></div>
+      <div class="corridor-wrap" id="summary-corridor"></div>
+      <p class="empty-note" style="text-align:center; margin:4px 0 14px;">Loddrett = kastelengde fra utgangspunktet, vannrett = sideavvik (V/H) fra siktelinjen — hver prikk er én disk</p>
       <div class="stat-row" id="stat-row"></div>
       <div id="summary-list"></div>
       <button class="btn btn-primary" style="margin-top:8px;" onclick="resetRound()">Ny runde</button>
@@ -524,7 +532,7 @@
 
     <!-- SCREEN: HISTORIKK (per disk, tab) -->
     <section class="screen" id="screen-history">
-      <h2 class="screentitle">Historikk · Per disk</h2>
+      <h2 class="screentitle">Statistikk · Per disk</h2>
       <div class="btn-row" id="history-links" style="margin-top:0; margin-bottom:6px;">
         <button class="btn btn-secondary btn-small" style="margin-bottom:0;" onclick="showAllRounds()">Alle runder →</button>
         <button class="btn btn-secondary btn-small" style="margin-bottom:0;" onclick="showCompareDiscs()">Sammenlign disker →</button>
@@ -556,7 +564,7 @@
     <!-- SCREEN: ALLE RUNDER (slett runde) -->
     <section class="screen" id="screen-allrounds">
       <button class="btn btn-ghost btn-small" onclick="showTab('history')">← Tilbake</button>
-      <h2 class="screentitle">Historikk · Alle runder</h2>
+      <h2 class="screentitle">Statistikk · Alle runder</h2>
       <p class="dev-banner" id="allrounds-dev-banner" style="display:none;">🧪 Viser testdata — dev-mode er på (skru av i Innstillinger)</p>
       <div id="allrounds-list"></div>
     </section>
@@ -590,7 +598,7 @@
       </div>
 
       <h2 class="screentitle">Dev-mode</h2>
-      <p class="empty-note" style="margin-bottom:8px;">Når dev-mode er på, viser Historikk-fanen kunstige disker og runder i stedet for din ekte historikk — nyttig for å se hvordan skjermen ser ut med mye data. Bag, Ny runde og Oversikt påvirkes ikke, og ekte data røres aldri (helt separat lagringsrom).</p>
+      <p class="empty-note" style="margin-bottom:8px;">Når dev-mode er på, viser Statistikk-fanen kunstige disker og runder i stedet for din ekte historikk — nyttig for å se hvordan skjermen ser ut med mye data. Bag, Ny runde og Oversikt påvirkes ikke, og ekte data røres aldri (helt separat lagringsrom).</p>
       <div class="chip-select-row" id="devmode-toggle-row" style="margin-bottom:10px;"></div>
       <button class="btn btn-ghost btn-small" id="devmode-regenerate-btn" style="margin-bottom:0; display:none;" onclick="generateDevData(); renderDevModeToggle();">Generer nye testdata →</button>
     </section>
@@ -612,7 +620,7 @@
     </button>
     <button class="tab" data-tab="history" onclick="showTab('history')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
-      Historikk
+      Statistikk
     </button>
     <button class="tab" data-tab="settings" onclick="showTab('settings')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -703,7 +711,7 @@ let detailDiscId = null; // disken som vises i screen-discdetail akkurat nå
 let detailWindFilter = null; // filter i disk-detalj: 'med'|'mot'|'side'|null
 let detailThrowTypeFilter = null; // filter i disk-detalj: 'hyzer'|'anhyzer'|'flatt'|null
 let detailHideImprecise = false; // filter i disk-detalj: skjul kast med accuracy > ACCURACY_GOOD_M
-let devMode = false; // når true: Historikk-fanen viser devDiscs/devRounds i stedet for ekte discs/rounds
+let devMode = false; // når true: Statistikk-fanen viser devDiscs/devRounds i stedet for ekte discs/rounds
 let devDiscs = []; // kunstige disker, helt isolert fra ekte discs (egen localStorage-nøkkel)
 let devRounds = []; // kunstige runder, helt isolert fra ekte rounds
 
@@ -794,20 +802,26 @@ function monthLabel(iso){
   }catch(e){ return iso; }
 }
 function buildTrendLineSVG(points, color){
-  const w=300, h=110, pad=12;
+  const w=300, padTop=16, padBottom=26, padLR=8, plotH=76;
+  const h = padTop + plotH + padBottom;
   const ys = points.map(p=>p.y);
   const maxY = Math.max(...ys), minY = Math.min(...ys, 0);
   const rangeY = Math.max(maxY-minY, 1);
-  const stepX = points.length>1 ? (w-pad*2)/(points.length-1) : 0;
+  const stepX = points.length>1 ? (w-padLR*2)/(points.length-1) : 0;
   const coords = points.map((p,i)=>({
-    px: pad + i*stepX,
-    py: h-pad - ((p.y-minY)/rangeY)*(h-pad*2)
+    px: padLR + i*stepX,
+    py: padTop + plotH - ((p.y-minY)/rangeY)*plotH
   }));
   const pathD = coords.map((c,i)=> (i===0?'M':'L') + c.px.toFixed(1) + ' ' + c.py.toFixed(1)).join(' ');
   const dots = coords.map((c,i)=>`<circle cx="${c.px.toFixed(1)}" cy="${c.py.toFixed(1)}" r="3.5" fill="${color}"><title>${formatDate(points[i].date)}: ${points[i].y.toFixed(1)} m</title></circle>`).join('');
   return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" style="display:block;">
+    <text x="${padLR}" y="${padTop-4}" font-size="9" fill="#57685D">${maxY.toFixed(0)} m</text>
+    <line x1="${padLR}" y1="${padTop+plotH}" x2="${w-padLR}" y2="${padTop+plotH}" stroke="rgba(16,36,26,0.2)" stroke-width="1"/>
+    <text x="${padLR}" y="${padTop+plotH+11}" font-size="9" fill="#57685D">${minY.toFixed(0)} m</text>
     <path d="${pathD}" fill="none" stroke="${color}" stroke-width="2"/>
     ${dots}
+    <text x="${padLR}" y="${h-6}" font-size="8" fill="#57685D">${formatDate(points[0].date)}</text>
+    <text x="${w-padLR}" y="${h-6}" font-size="8" text-anchor="end" fill="#57685D">${formatDate(points[points.length-1].date)}</text>
   </svg>`;
 }
 
@@ -887,9 +901,9 @@ function persistRounds(){
   if(!res){ storageOk = false; document.getElementById('storage-note').style.display='block'; }
 }
 
-// ---------- DEV-MODE (isolert testdata for Historikk) ----------
+// ---------- DEV-MODE (isolert testdata for Statistikk) ----------
 // Helt separat lagringsrom (localStorage-nøkler prefikset "dgfw-dev:") - rører aldri ekte discs/rounds.
-// Bag, Ny runde og Oversikt bruker alltid ekte data uansett devMode; kun Historikk-visningene sjekker devMode.
+// Bag, Ny runde og Oversikt bruker alltid ekte data uansett devMode; kun Statistikk-visningene sjekker devMode.
 function activeDiscs(){ return devMode ? devDiscs : discs; }
 function activeRounds(){ return devMode ? devRounds : rounds; }
 function persistDevDiscs(){ try{ localStorage.setItem('dgfw-dev:discs', JSON.stringify(devDiscs)); }catch(e){} }
@@ -1525,6 +1539,10 @@ function buildCorridorSVG(points){
   return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="180" style="display:block;">
     <line x1="${w/2}" y1="14" x2="${w/2}" y2="${h-18}" stroke="rgba(16,36,26,0.35)" stroke-width="1.5" stroke-dasharray="4 5"/>
     <circle cx="${w/2}" cy="${h-18}" r="6" fill="none" stroke="#8A6410" stroke-width="2"/>
+    <text x="6" y="12" font-size="9" fill="#57685D">${maxAlong.toFixed(0)} m</text>
+    <text x="${w/2}" y="${h-4}" font-size="9" text-anchor="middle" fill="#8A6410">Utgangspunkt</text>
+    <text x="6" y="${h/2}" font-size="9" fill="#57685D">V</text>
+    <text x="${w-6}" y="${h/2}" font-size="9" text-anchor="end" fill="#57685D">H</text>
     ${dots}
   </svg>`;
 }
@@ -1759,17 +1777,24 @@ function renderDiscDetail(){
 
   document.getElementById('detail-trendline').innerHTML = chronological.length>=2
     ? `<div style="background:var(--chalk-dim); border:1px solid var(--line); border-radius:14px; padding:10px 8px 6px; margin-bottom:14px;">
-         <div class="chip-select-label" style="margin:0 0 6px 4px;">Trend over tid</div>
+         <div class="chip-select-label" style="margin:0 0 6px 4px;">Trend over tid (kastelengde, eldste → nyeste)</div>
          ${buildTrendLineSVG(chronological.map(t=>({y:t.distance, date:t.date})), disc.color)}
        </div>`
     : '';
 
   const maxDist = Math.max(...distances);
-  document.getElementById('detail-chart').innerHTML = `<div class="chart-bars">` +
-    chronological.map(t=>{
-      const pct = maxDist>0 ? (t.distance/maxDist*100) : 0;
-      return `<div class="chart-bar" title="${formatDate(t.date)}: ${t.distance.toFixed(1)} m" style="height:${pct}%; background:linear-gradient(180deg, ${disc.color}, var(--disc-orange));"></div>`;
-    }).join('') + `</div>`;
+  document.getElementById('detail-chart').innerHTML = `
+    <span class="chip-select-label" style="margin-top:0;">Kastelengde per registrering (eldste → nyeste)</span>
+    <div class="chart-row">
+      <div class="chart-yaxis"><span>${maxDist.toFixed(0)} m</span><span>0 m</span></div>
+      <div class="chart-bars">` +
+        chronological.map(t=>{
+          const pct = maxDist>0 ? (t.distance/maxDist*100) : 0;
+          return `<div class="chart-bar" title="${formatDate(t.date)}: ${t.distance.toFixed(1)} m" style="height:${pct}%; background:linear-gradient(180deg, ${disc.color}, var(--disc-orange));"></div>`;
+        }).join('') + `</div>
+    </div>
+    <div class="chart-xaxis"><span>${formatDate(chronological[0].date)}</span><span>${formatDate(chronological[chronological.length-1].date)}</span></div>
+  `;
 
   const newestFirst = all.slice().sort((a,b)=> new Date(b.date) - new Date(a.date));
   document.getElementById('detail-list').innerHTML = newestFirst.map(t=>{
