@@ -125,3 +125,9 @@ De tre filterne i disk-detalj (vindretning, kasttype, presisjon) tok tidligere a
 - `simulatedTargetCoords(simMode)` regner ut et fiktivt mål-punkt ut fra hvilken skjerm som spør (`simMode: 'startpoint'|'aim'|'throw'`, satt i `cfg` på hvert av de fire kallene til `startPositionWatch()`): utgangspunktet er et fast tilfeldig punkt, sikteretningen er 10 m unna i en tilfeldig kompassretning, og hvert kast simulerer en realistisk kastelengde (60–115 m) med sidespredning (±10 m) langs nettopp den retningen — ellers ville avstand/sideavvik alltid blitt 0.
 - `startSimulatedPositionWatch()` etterligner selve nøyaktighets-konvergensen til ekte `watchPosition` (starter upresist, blir gradvis bedre inntil ≤ `ACCURACY_GOOD_M`), slik at nøyaktighetssperren i UI-et (jf. CLAUDE.md) fortsatt oppleves riktig i dev-mode — statusteksten er tydelig merket «🧪 Simulert posisjon (dev-mode)» slik at simulerte og ekte fiks aldri kan forveksles.
 - Ekte GPS (`navigator.geolocation`) røres aldri når dev-mode er på — ren erstatning, ingen risiko for at simulerte koordinater lekker inn i en ekte måling eller omvendt.
+
+## 23. Versjonsnummer og "sist oppdatert" nederst i Innstillinger
+
+To nye konstanter øverst i `<script>`-blokken, `APP_VERSION` og `APP_UPDATED_AT` (ISO-tidspunkt med tidssone), vises nederst i Innstillinger som «Versjon 17 · Sist oppdatert 10.07.2026 kl. 18:45» (`formatAppUpdatedAt()`, satt i `initApp()`). Gir brukeren en enkel måte å se om telefonen faktisk har hentet siste versjon fra service worker-cachen.
+
+Siden appen ikke har noe build-steg, er disse to konstantene rent manuelle — CLAUDE.md er oppdatert med at de skal bumpes/settes sammen med `CACHE_NAME` ved hver fremtidig endring, samme rutine som cache-bumpen i punkt 5.

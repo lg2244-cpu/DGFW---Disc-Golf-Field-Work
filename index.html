@@ -177,6 +177,11 @@
     font-size:11px; text-transform:none; letter-spacing:0; font-weight:800; color:var(--disc-orange-ink);
   }
 
+  .app-version-footer{
+    margin-top:28px; padding-top:14px; border-top:1px solid var(--line);
+    text-align:center; font-size:11px; color:var(--slate); letter-spacing:.02em;
+  }
+
   .btn{
     display:block; width:100%; text-align:center;
     padding:var(--btn-pad); border-radius:14px; border:none;
@@ -654,6 +659,8 @@
       <p class="empty-note" style="margin-bottom:8px;">Når dev-mode er på, viser Statistikk-fanen kunstige disker og runder i stedet for din ekte historikk — nyttig for å se hvordan skjermen ser ut med mye data. Bag, Ny runde og Oversikt påvirkes ikke, og ekte data røres aldri (helt separat lagringsrom).</p>
       <div class="chip-select-row" id="devmode-toggle-row" style="margin-bottom:10px;"></div>
       <button class="btn btn-ghost btn-small" id="devmode-regenerate-btn" style="margin-bottom:0; display:none;" onclick="generateDevData(); renderDevModeToggle();">Generer nye testdata →</button>
+
+      <p class="app-version-footer" id="app-version-footer"></p>
     </section>
 
   </div>
@@ -733,6 +740,12 @@
 </div>
 
 <script>
+// ---------- APP-VERSJON ----------
+// Bump APP_VERSION og sett APP_UPDATED_AT til pushe-tidspunktet (lokal tid) ved hver endring —
+// sammen med CACHE_NAME i service-worker.js. Vises nederst i Innstillinger.
+const APP_VERSION = 17;
+const APP_UPDATED_AT = '2026-07-10T18:45:00+02:00';
+
 // ---------- STATE ----------
 const COLORS = ["#FF6A39","#D8C25A","#5FA88A","#3B3B3B","#7C8AC8","#C25C5C"];
 const WIND_DIRECTIONS = [{key:'med',label:'Medvind'},{key:'mot',label:'Motvind'},{key:'side',label:'Sidevind'},{key:'stille',label:'Vindstille'}];
@@ -897,6 +910,14 @@ function startPositionWatch(cfg){
 function formatDate(iso){
   try{
     return new Date(iso).toLocaleDateString('no-NO', {day:'2-digit', month:'2-digit', year:'2-digit'});
+  }catch(e){ return iso; }
+}
+function formatAppUpdatedAt(iso){
+  try{
+    const d = new Date(iso);
+    const datePart = d.toLocaleDateString('no-NO', {day:'2-digit', month:'2-digit', year:'numeric'});
+    const timePart = d.toLocaleTimeString('no-NO', {hour:'2-digit', minute:'2-digit'});
+    return datePart + ' kl. ' + timePart;
   }catch(e){ return iso; }
 }
 function stddev(nums){
@@ -1100,6 +1121,7 @@ function initApp(){
   loadDevModeState();
 
   if(!storageOk){ document.getElementById('storage-note').style.display='block'; }
+  document.getElementById('app-version-footer').textContent = 'Versjon ' + APP_VERSION + ' · Sist oppdatert ' + formatAppUpdatedAt(APP_UPDATED_AT);
   renderBag();
   renderHistoryList();
 }

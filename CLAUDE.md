@@ -37,6 +37,8 @@ Alt ligger i `index.html`: CSS i én `<style>`-blokk, all markup, deretter all J
 
 `service-worker.js` cache-først-serverer app-skallet (`ASSETS`-lista) under `CACHE_NAME`. **Bump `CACHE_NAME` ved enhver endring i en cachet fil** (`index.html`, `manifest.json`, ikoner) — ellers fortsetter nettlesere som allerede har installert/besøkt appen å servere den gamle cachede versjonen på ubestemt tid, siden et uendret service-worker-script aldri trigger en oppdateringssjekk. Dette har forårsaket en reell bug tidligere (se `implementert.md` punkt 5).
 
+Samtidig med denne bumpen: oppdater også `APP_VERSION` og `APP_UPDATED_AT` (øverst i `<script>`-blokken i `index.html`) til samme tall og pushe-tidspunktet (lokal tid, ISO med tidssone). Disse vises nederst i Innstillinger-fanen som «Versjon N · Sist oppdatert dd.mm.åååå kl. tt:mm», så brukeren kan se om telefonen har hentet siste versjon.
+
 ## Repo-dokumenter som må holdes oppdatert
 
 - `TODO.md` — prioritert backlog. Hvert punkt følger `- **Tittel**` på egen linje med beskrivelsen indentert på neste linje, blanklinje mellom punkter. Følg dette formatet ved nye punkter.
