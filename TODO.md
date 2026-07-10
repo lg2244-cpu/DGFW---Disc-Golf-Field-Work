@@ -1,67 +1,44 @@
 # DG Field Work – TODO
 
-## 1. Statistikk å hente ut fra kastene — ferdig ✓
-Utover det opprinnelige (lengst/snitt/kortest per disk, kronologisk kastliste), er følgende implementert i disk-detaljvisningen:
+Samlet backlog, organisert etter prioritet. Ferdigstilte punkter ligger i [implementert.md](implementert.md).
 
-- **Konsistens/spredning** — standardavvik i kastelengde per disk (4. stat-boks).
-- **Sideveis tendens (fade/turn-bias)** — gjennomsnittlig sideavvik per disk, vist som chip.
-- **Utvikling over tid** — trend siste 5 kast vs. tidligere kast (krever ≥6 kast for å vises).
-- **Sammenligning mellom disker** — egen "Sammenlign disker"-skjerm, gruppert på type (driver/midrange/putter), rangert på snittavstand.
-- **Forhold under kastet** — vind (retning + styrke) settes én gang per runde på utgangspunkt-skjermen; kasttype (hyzer/anhyzer/flatt) velges per kast. Disk-detaljvisningen har filter-chips for begge, slik at statistikken over kan brytes ned på f.eks. "Destroyer i motvind".
+## Prioritet 1 – Analyse og visualisering
 
-Datamodell: `rounds[i].wind = {direction, strength}`, `rounds[i].throws[j].throwType`. Begge valgfrie; gammel lagret data uten disse feltene håndteres som "ikke satt", ikke egen filterkategori.
+- **Utvikling over tid (utvidet)** — dagens trend-badge (siste 5 kast vs. tidligere) kan bygges videre ut med: gjennomsnitt siste 10 kast, sammenligning mot en valgt tidligere periode, personlig rekord per disk, beste måned, egen trendgraf (linje over tid) i tillegg til dagens stolpediagram.
+- **Median i tillegg til snitt** — median er mer robust mot GPS-uteliggere enn gjennomsnitt, og ville gitt et mer troverdig "typisk kast"-tall per disk i disk-detaljvisningen.
+- **Merk usikre målinger** — bruker man "Bruk nåværende posisjon likevel" ved dårlig GPS-nøyaktighet, lagres kastet i dag uten spor av at målingen var usikker. Lagre nøyaktigheten (`coords.accuracy`) per kast, vis et lite merke i historikken/detaljvisningen, og vurder mulighet til å filtrere bort upresise kast fra statistikken.
+- **Slett/korriger enkeltkast** — i dag kan man kun slette en hel runde, ikke ett enkelt feilmålt kast. Én dårlig GPS-måling forurenser statistikken permanent inntil hele runden slettes.
+- **Kastkart** — vis alle kast for en disk ovenfra i ett samlet kart (utvidelse av dagens korridor-SVG, som i dag kun viser én runde av gangen), for å se spredning, høyre/venstre-tendens og konsistens visuelt på tvers av alle runder. Kan bygges som SVG, samme mønster som `buildCorridorSVG()`.
+- **Automatisk analyse av disker** — la appen selv beskrive hvordan en disk oppfører seg, f.eks. "mest stabil i motvind", "størst spredning", "minst sideavvik", "lengst i medvind", "mest konsistent". Bygger videre på eksisterende vind/kasttype-filtrering i disk-detalj.
+- **Sammenligning mellom disker (videreutvikling)** — utvid dagens "Sammenlign disker"-skjerm (som i dag kun viser snittavstand) med maks, standardavvik/konsistensscore, og et forslag til anbefalt bruksområde per disk.
+- **Personlige anbefalinger** — basert på historiske kast, f.eks. "Explorer er i snitt 6 meter lengre enn Teebird i motvind" eller "Ballista er den mest konsistente distance-driveren". Forutsetter at punktene over (spredning, vind-nedbrutt statistikk) er på plass først — dette er i praksis et sammendrag av dem. Målet er at appen blir en treningsassistent, ikke bare et måleverktøy.
 
-## 2. Diskregister (bag) — rediger/slett — ferdig ✓
-Rediger- og slett-knapp per disk-kort. Sletting er ikke-destruktivt: disken forsvinner fra bag/historikk/sammenlign, men rådata for tidligere kast med disken ligger fortsatt i `localStorage`.
+## Prioritet 2 – Registrering
 
-## 3. Historikk — slett runde — ferdig ✓
-Ny "Alle runder"-visning (nås fra Historikk-fanen) med slett-knapp + bekreftelse per runde.
+- **Flere kastparametere** — del opp dagens "kasttype" (hyzer/anhyzer/flatt) i to uavhengige valg: kastestil (backhand/forehand/roller/overhand) og frislipp (hyzer/flat/anhyzer). Mer presist, men også flere valg å ta per kast — vurder om begge fortsatt skal være valgfrie som i dag.
+- **Automatisk vær** — hent vindretning/-styrke og temperatur automatisk fra GPS-posisjon (værtjeneste-API) i stedet for manuell chip-registrering, med mulighet for brukeren til å korrigere. Krever ekstern API-nøkkel/tjeneste (f.eks. met.no sitt gratis API siden appen allerede er norsk) — egen vurdering av hvilken tjeneste før implementasjon.
+- **Baner og hull** — knytt en session til bane/hull/teepad i stedet for bare fri GPS-posisjon, for bedre sammenligning over tid på samme hull. Overlapper med dagens session-konsept (utgangspunkt+sikteretning låst per økt) — dette ville i så fall bli en navngitt/gjenbrukbar variant av samme idé, ikke noe helt nytt system.
 
-## 4. Git + publisering — ferdig ✓
-- ✓ Lokalt git-repo initialisert.
-- ✓ GitHub-repo opprettet og pushet, gjort offentlig (bruker bekreftet — ingen hemmeligheter i koden): https://github.com/lg2244-cpu/DGFW---Disc-Golf-Field-Work
-- ✓ GitHub Pages aktivert og live: **https://lg2244-cpu.github.io/DGFW---Disc-Golf-Field-Work/**. Oppdateres automatisk ved push til `master`.
+## Prioritet 3 – Brukervennlighet
 
-## 5. Fargedesign for sollys-lesbarhet — ferdig ✓
-Hele appen byttet fra mørkt til lyst, høykontrast-tema, siden appen alltid brukes utendørs i felt (aldri innendørs) — samme prinsipp som turgps-er/sportsklokker.
-- Bakgrunn/kort: lys kremhvit (`--chalk`/`--chalk-dim`), mørk skoggrønn ink-tekst (`--forest-dark`/`--forest`) som primærfarge for all lesetekst.
-- Aksentfargene oransje og gull fikk egne mørkere "ink"-varianter (`--disc-orange-ink`, `--turf-yellow-ink`) til bruk som *tekst* (stat-tall, overskrifter, chips), mens de opprinnelige lyse variantene beholdes til *fyll* (knapper, prikker, progresjon) — nødvendig fordi samme lyse farge ikke har nok kontrast både som bakgrunnsfarge-med-mørk-tekst og som tekstfarge-på-lys-bakgrunn.
-- Korridor-/bane-visualiseringen (kast-registrering, oversikt) var først bevisst mørkegrønn som et tematisk "fairway"-panel, men ble senere gjort lys som resten av appen etter tilbakemelding om at den fortsatt var vanskelig å lese i sol — det finnes nå ingen bevisst mørke områder igjen.
-- **Viktig funn:** `service-worker.js` cachet gammel `index.html` uten at endringer noensinne ble hentet på nytt, siden `CACHE_NAME` aldri endret seg (service worker-skriptet så uendret ut for nettleseren → ingen oppdatering ble trigget). Fikset ved å bumpe `CACHE_NAME`. **Husk å bumpe `CACHE_NAME` ved hver fremtidig endring i cachede filer**, ellers ser ikke brukere som allerede har besøkt siden noen oppdateringer.
+- **Søk i bag** — ved mange disker blir listen lang. Legg til søkefelt, favoritt-merking, og filtrering (favoritter + de fire disktypene) i Bag-fanen.
+- **Varsel om ny versjon** — cache-first service worker betyr at man i dag ser oppdateringer først ved *andre* besøk etter en deploy. En liten "Ny versjon tilgjengelig — trykk for å oppdatere"-melding (lytt på `updatefound`/`controllerchange` på service worker-registreringen) ville fjernet forvirringen.
+- **Små forbedringer:**
+  - Vis antall valgte disker på "Start runde →"-knappen
+  - Sortering av disker i Bag (f.eks. alfabetisk, etter type, etter snittavstand)
+  - Tydeligere fargekoding per disktype (utover brukervalgt swatch-farge)
+  - Eget GPS-statusikon i header, ikke bare tekst på måleskjermene
+  - Haptisk tilbakemelding (vibrasjon) ved vellykket GPS-registrering, der nettleseren støtter det
+  - Flere filtermuligheter i historikken (utover dagens vind/kasttype-filter — f.eks. dato-intervall)
+  - Vis vind/dato på Oversikt-skjermen, og vind per rad i kastlisten i disk-detalj
 
-## 6. Navnebytte: "Kastlinje" → "DG Field Work" — ferdig ✓
-Appnavnet "Kastlinje" var dårlig, byttet overalt: `<title>`, synlig merkevaretekst i header, `manifest.json` (name/short_name), README, denne filen. `localStorage`-nøklene ble også byttet fra `kastlinje:*` til `dgfw:*` — en engangs migrering (`migrateOldStorageKeys()`) kopierer over evt. data lagret under det gamle navnet, slik at ingen mister lagrede disker/runder. `service-worker.js` sitt `CACHE_NAME` byttet til `dgfw-v1`.
+## Prioritet 4 – Data
 
-## 7. Diskkategorier: 4 nye typer — ferdig ✓
-Byttet ut de 3 gamle kategoriene ("Driver"/"Midrange"/"Putter") med 4 nye: **Distance Driver**, **Fairway Driver**, **Mid-range**, **Putt and Approach**. Endret i type-select i legg til/rediger-disk-modalen, standardverdi for nye disker, seed-diskene, og gruppe-rekkefølgen i "Sammenlign disker". Lagt til `migrateDiscTypes()` (kjører i `initApp()`) som mapper gamle lagrede disker over til nye kategorier én gang (`Driver→Distance Driver`, `Midrange→Mid-range`, `Putter→Putt and Approach`) og persisterer, slik at ingen disker forsvinner fra Sammenlign-grupperingen.
+- **Sikkerhetskopi av alt (eksporter/importer runder+disker)** — all historikk ligger i dag kun i `localStorage` på én telefon. Mistes telefonen eller ryddes nettleserdata, er alt borte for godt. En "Eksporter alt"/"Importer alt"-funksjon (JSON, full runde-for-runde-data — samme mønster som dagens disk-import/eksport) ville gitt en reell sikkerhetskopi og mulighet til å flytte data mellom enheter. Bør trolig prioriteres høyt til tross for at den står under "Prioritet 4" i denne lista — lav innsats, høy risiko ved å ikke ha den.
+- **Eksporter kastdata som CSV** — enklere, read-only variant/supplement til punktet over: CSV-eksport av alle registrerte kast for åpning i regneark/ekstern analyse. Ikke nødvendigvis egnet for reimport (i motsetning til JSON-sikkerhetskopien over), men raskere å få øye på for enkel manuell gjennomgang.
 
-## 8. Bedre GPS-nøyaktighet: watchPosition + nøyaktighets-sperre — ferdig ✓
-Byttet fra `getCurrentPosition` (tar det aller første, ofte upresise fiksen) til `watchPosition` på alle tre målepunkter (utgangspunkt, sikteretning, kast). Ny delt mekanisme `startPositionWatch()`/`stopPositionWatch()`:
-- Strømmer posisjonsoppdateringer og viser live nøyaktighet i statusteksten og et fargekodet nøyaktighetsmerke (gult mens den søker, grønt når den er god).
-- Hovedknappen ("Sett utgangspunkt"/"Registrer sikteretning"/"Registrer posisjon") er deaktivert helt til nøyaktigheten er ≤ `ACCURACY_GOOD_M` (7 m).
-- En "Bruk nåværende posisjon likevel"-knapp dukker opp så snart det finnes ett fiks (uansett kvalitet), som en manuell nødluke slik at man aldri kan bli sittende fast i tett skog der signalet aldri blir bra nok.
-- GPS-pin-ikonet pulserer mens det søkes, roer seg når signalet er godt.
-- `stopPositionWatch()` kalles ved bekreftet måling, ved "← Velg annen disk", ved "Hopp over"-sikteretning, og som sikkerhetsnett øverst i `showTab()` — ingen watch skal fortsette å kjøre i bakgrunnen og tappe batteri etter at brukeren har forlatt måleskjermen.
-- `getCurrentPosition`-baserte `getPosition()`-helperen er fjernet (ubrukt etter omleggingen). `describeGeoError`s timeout-tekst oppdatert til 15 sekunder (matcher nytt `timeout`-alternativ i `watchPosition`).
+## Langsiktig
 
-## 9. Vindstille som eget vindalternativ — ferdig ✓
-Lagt til «Vindstille» som fjerde valg i vindretning-chippene (ved siden av Medvind/Motvind/Sidevind). Når det velges skjules styrke-raden helt og `windStrength` tvinges til `null`, siden styrke ikke gir mening ved vindstille. Gjenbrukt samme liste (`WIND_DIRECTIONS`) i filter-chippene på disk-detaljvisningen, så man også kan filtrere kast på «vindstille» der.
-
-## 10. Flight-tall på disker (Speed/Glide/Turn/Fade) — ferdig ✓
-Fire valgfrie numeriske felt i legg til/rediger-disk-modalen (halve poeng støttet, f.eks. Turn -1.5, som er vanlig på ekte disk-spesifikasjoner): Speed (1–15), Glide (1–7), Turn (-5–1), Fade (0–5). Vises som en kompakt linje under disk-typen i Bag-listen (f.eks. «12 | 5 | -1.5 | 3») kun når minst ett av tallene er satt. Ikke obligatorisk — eksisterende disker uten disse verdiene fungerer som før.
-
-## 11. Import/eksport av bag som .txt — ferdig ✓
-To knapper øverst i Bag-fanen. Eksport laster ned en `.txt`-fil (kommaseparert, én disk per linje: `navn,type,speed,glide,turn,fade,farge`, med en `#`-kommentarlinje øverst som forklarer formatet) via Blob + midlertidig nedlastingslenke. Import leser en valgt fil via FileReader og «upserter»: disker matches på navn (case-insensitivt) — finnes en disk med samme navn fra før oppdateres den, ellers legges en ny disk til. Ingen duplikater. Ukjente/manglende diskType-strenger normaliseres mot de fire kjente kategoriene (case-insensitivt), rader uten navn/type hoppes over. Viser oppsummering («X nye, Y oppdatert, Z hoppet over») etter import.
-
-## 12. Session-nivå over Ny runde — ferdig ✓
-Nytt lag mellom Bag og runde-registrering: en **session** låser utgangspunkt *og* sikteretning på tvers av så mange runder man vil, siden det vanligste er å teste samme disker gjentatte ganger fra samme fysiske sted.
-- Trykker man på «Ny runde»-fanen uten aktiv session, startes automatisk et nytt session-oppsett (samme GPS-skjermer som før, nå med overskriftene «Ny session · Utgangspunkt»/«Ny session · Sikteretning»). Er en session allerede aktiv, hopper man rett til rundevelgeren.
-- Rundevelgeren (`screen-round`) har fått en «Rediger utgangspunkt/sikteretning»-knapp (kaller `editSessionPosition()`) og en «Avslutt session»-knapp (`endSession()`). Redigering midt i en runde med allerede registrerte kast varsler først og nullstiller de kastene (siden de er beregnet fra det gamle utgangspunktet og blir ugyldige).
-- **Vind flyttet fra sesjon- til rundenivå** — chippene sitter nå på rundevelgeren i stedet for utgangspunkt-skjermen, siden forholdene kan endre seg over en lengre økt selv om posisjonen ikke gjør det.
-- Diskvalget (`selectedForRound`) beholdes bevisst mellom runder i samme session (nullstilles kun ved helt ny session) — vanligvis vil man teste samme disker om igjen. `resetRound()` (Ny runde-knappen på Oversikt) nullstiller derfor bare kast/vind, ikke diskvalget eller selve sesjonen.
-- Kun in-memory, som resten av GPS-tilstanden — en session overlever ikke at appen lukkes/refreshes.
-
-## Idébank — mulige fremtidige steg (ikke påbegynt)
-Ting som er verdt å vurdere senere, men som ikke er i arbeid nå:
-
-- **Capacitor / nativ app** — pakk dagens HTML/JS-kode i et nativt app-skall (`@capacitor/core` + `@capacitor/geolocation`) hvis nettleser-GPS fortsatt ikke er godt nok etter watchPosition-omleggingen (pkt. 8), eller hvis man trenger stabil bakgrunnssporing mens skjermen er låst (iOS dreper ofte GPS-sporing i bakgrunnsfaner). Gir tilgang til app-butikkene, men er et større steg (bygge-pipeline, plattform-spesifikk publisering) — kun aktuelt hvis de nettleser-baserte forbedringene viser seg utilstrekkelige i praksis. Nevnt som fremtidig mulighet i [README.md](README.md).
+- **Capacitor / nativ app** — pakk dagens HTML/JS-kode i et nativt app-skall (`@capacitor/core` + `@capacitor/geolocation`) hvis nettleser-GPS fortsatt ikke er godt nok etter watchPosition-omleggingen, eller hvis man trenger stabil bakgrunnssporing mens skjermen er låst (iOS dreper ofte GPS-sporing i bakgrunnsfaner). Gir tilgang til app-butikkene, men er et større steg (bygge-pipeline, plattform-spesifikk publisering) — kun aktuelt hvis de nettleser-baserte forbedringene viser seg utilstrekkelige i praksis. Nevnt som fremtidig mulighet i README.md.
+- **Cloud-synkronisering** — synkroniser historikk mellom flere enheter (f.eks. Supabase eller Firebase). Forutsetter en beslutning om backend/konto-løsning — en betydelig arkitekturendring fra dagens rene frontend-app uten server.
+- **AI-analyse** — når brukeren har registrert mange kast, la appen foreslå hvilke disker som overlapper i bruksområde, hvilke som bør brukes mer, hvilke kast som bør trenes, og hvilke disker som kan tas ut av bagen. Forutsetter et betydelig datagrunnlag (mange runder) for å gi mening, og sannsynligvis ekstern AI-tjeneste eller egen regelmotor.
