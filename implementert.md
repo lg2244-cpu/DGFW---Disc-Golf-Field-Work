@@ -116,3 +116,12 @@ To nye visninger i Statistikk-fanen, valgt ut fra en mockup-runde med brukeren (
 De tre filterne i disk-detalj (vindretning, kasttype, presisjon) tok tidligere alltid opp fast plass som tre alltid-synlige chip-rader over statistikken. Erstattet med native `<details>`/`<summary>`-elementer (`.filter-group`), kollapset som standard — ingen egen JS trengs for åpne/lukke-oppførselen. Et lite `.filter-group-value`-merke i `<summary>` (satt av `renderDetailFilters()`) viser gjeldende valg (f.eks. «Motvind») selv når gruppen er lukket, slik at et aktivt filter aldri er usynlig.
 
 **Fallgruve funnet under verifisering:** appens egen `.chip-select-row{display:flex}`-regel overstyrte nettleserens innebygde skjuling av lukket `<details>`-innhold, siden en vanlig (ikke-`!important`) author-regel alltid vinner over UA-stilarket uansett selektor-spesifisitet. Løst med en eksplisitt `.filter-group:not([open]) .chip-select-row{display:none;}`-regel.
+
+## 22. Simulert GPS i dev-mode, for å teste «Ny runde» uten ekte posisjon
+
+`startPositionWatch()` bruker nå simulerte posisjoner i stedet for `navigator.geolocation.watchPosition` når `devMode` er på — hele flyten utgangspunkt → sikteretning → kast kan dermed testes fra kontorpulten, uten GPS-maskinvare eller HTTPS/felt-tilgang.
+
+- `simOrigin`/`simAimBearing` (nye globale variabler) settes én gang per økt i `beginNewSession()`, slik at simulert utgangspunkt og sikteretning henger sammen på tvers av skjermene akkurat som ekte GPS ville gjort.
+- `simulatedTargetCoords(simMode)` regner ut et fiktivt mål-punkt ut fra hvilken skjerm som spør (`simMode: 'startpoint'|'aim'|'throw'`, satt i `cfg` på hvert av de fire kallene til `startPositionWatch()`): utgangspunktet er et fast tilfeldig punkt, sikteretningen er 10 m unna i en tilfeldig kompassretning, og hvert kast simulerer en realistisk kastelengde (60–115 m) med sidespredning (±10 m) langs nettopp den retningen — ellers ville avstand/sideavvik alltid blitt 0.
+- `startSimulatedPositionWatch()` etterligner selve nøyaktighets-konvergensen til ekte `watchPosition` (starter upresist, blir gradvis bedre inntil ≤ `ACCURACY_GOOD_M`), slik at nøyaktighetssperren i UI-et (jf. CLAUDE.md) fortsatt oppleves riktig i dev-mode — statusteksten er tydelig merket «🧪 Simulert posisjon (dev-mode)» slik at simulerte og ekte fiks aldri kan forveksles.
+- Ekte GPS (`navigator.geolocation`) røres aldri når dev-mode er på — ren erstatning, ingen risiko for at simulerte koordinater lekker inn i en ekte måling eller omvendt.

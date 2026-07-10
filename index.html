@@ -792,18 +792,80 @@ function describeGeoError(e){
 const ACCURACY_GOOD_M = 7;
 let activeWatchId = null;
 let watchBestCoords = null;
+let simulatedWatchInterval = null;
 function stopPositionWatch(){
   if(activeWatchId!==null && navigator.geolocation){
     navigator.geolocation.clearWatch(activeWatchId);
   }
+  if(simulatedWatchInterval!==null){
+    clearInterval(simulatedWatchInterval);
+  }
   activeWatchId = null;
+  simulatedWatchInterval = null;
   watchBestCoords = null;
 }
+
+// ---------- SIMULERT GPS (dev-mode) ----------
+// Lar hele "Ny runde"-flyten (utgangspunkt → sikteretning → kast) testes uten ekte GPS-maskinvare/felt-tilgang.
+// simOrigin/simAimBearing settes én gang per økt (nullstilles i beginNewSession) slik at utgangspunkt og
+// sikteretning henger sammen på tvers av skjermene, og hvert kast simuleres med en realistisk kastelengde
+// (60-115 m) og sidespredning langs akkurat den sikteretningen — ellers ville avstand/sideavvik alltid blitt 0.
+let simOrigin = null;
+let simAimBearing = null;
+function metersToLatLon(origin, north, east){
+  const latRad = origin.lat*Math.PI/180;
+  return {lat: origin.lat + north/110540, lon: origin.lon + east/(Math.cos(latRad)*111320)};
+}
+function simulatedTargetCoords(simMode){
+  if(!simOrigin){
+    // Vilkårlig fast startområde (Oslo), kun til test i dev-mode — reell posisjon brukes aldri her.
+    simOrigin = {lat:59.9139 + (Math.random()-0.5)*0.02, lon:10.7522 + (Math.random()-0.5)*0.02};
+  }
+  if(simMode==='startpoint') return {lat:simOrigin.lat, lon:simOrigin.lon};
+  if(simAimBearing===null) simAimBearing = Math.random()*Math.PI*2;
+  if(simMode==='aim'){
+    return metersToLatLon(simOrigin, Math.cos(simAimBearing)*10, Math.sin(simAimBearing)*10);
+  }
+  const dist = 60 + Math.random()*55;
+  const lateralOffset = (Math.random()-0.5)*20;
+  const perpBearing = simAimBearing + Math.PI/2;
+  const north = Math.cos(simAimBearing)*dist + Math.cos(perpBearing)*lateralOffset;
+  const east = Math.sin(simAimBearing)*dist + Math.sin(perpBearing)*lateralOffset;
+  return metersToLatLon(simOrigin, north, east);
+}
+function startSimulatedPositionWatch(cfg){
+  const target = simulatedTargetCoords(cfg.simMode);
+  let tick = 0;
+  const emit = ()=>{
+    tick++;
+    const acc = Math.max(3, 26 - tick*4) + (Math.random()*2-1);
+    const noise = acc/2;
+    const jitterLat = (Math.random()-0.5) * noise/110540;
+    const jitterLon = (Math.random()-0.5) * noise/(Math.cos(target.lat*Math.PI/180)*111320);
+    const coords = {latitude: target.lat+jitterLat, longitude: target.lon+jitterLon, accuracy: acc};
+    watchBestCoords = coords;
+    const ready = acc <= ACCURACY_GOOD_M;
+    cfg.statusEl.textContent = ready
+      ? '🧪 Simulert posisjon (dev-mode) ✓ — klar til å registrere'
+      : '🧪 Simulerer posisjon (dev-mode) … (±' + Math.round(acc) + ' m)';
+    cfg.accuracyWrapEl.innerHTML = `<div class="accuracy-tag${ready?' accuracy-good':''}">±${Math.round(acc)} m nøyaktighet</div>`;
+    cfg.primaryBtnEl.disabled = !ready;
+    if(cfg.pinEl) cfg.pinEl.classList.toggle('searching', !ready);
+    if(cfg.overrideBtnEl) cfg.overrideBtnEl.style.display = ready ? 'none' : 'block';
+  };
+  emit();
+  simulatedWatchInterval = setInterval(emit, 700);
+}
+
 function startPositionWatch(cfg){
   stopPositionWatch();
   cfg.primaryBtnEl.disabled = true;
   if(cfg.overrideBtnEl) cfg.overrideBtnEl.style.display = 'none';
   if(cfg.pinEl) cfg.pinEl.classList.add('searching');
+  if(devMode){
+    startSimulatedPositionWatch(cfg);
+    return;
+  }
   if(!window.isSecureContext){
     cfg.statusEl.textContent = describeGeoError({code:0, message:'Denne siden er ikke lastet over HTTPS, så nettleseren tillater ikke posisjonsdeling.'});
     return;
@@ -1331,6 +1393,8 @@ function beginNewSession(){
   sessionActive = false;
   startpoint = null;
   aimVector = null;
+  simOrigin = null;
+  simAimBearing = null;
   document.getElementById('accuracy-tag-wrap').innerHTML = '';
   document.getElementById('startpoint-next').disabled = true;
   showScreen('screen-startpoint');
@@ -1339,7 +1403,8 @@ function beginNewSession(){
     statusEl: document.getElementById('startpoint-status'),
     accuracyWrapEl: document.getElementById('accuracy-tag-wrap'),
     primaryBtnEl: document.getElementById('startpoint-capture-btn'),
-    overrideBtnEl: document.getElementById('startpoint-override-btn')
+    overrideBtnEl: document.getElementById('startpoint-override-btn'),
+    simMode: 'startpoint'
   });
 }
 function editSessionPosition(){
@@ -1357,7 +1422,8 @@ function editSessionPosition(){
     statusEl: document.getElementById('startpoint-status'),
     accuracyWrapEl: document.getElementById('accuracy-tag-wrap'),
     primaryBtnEl: document.getElementById('startpoint-capture-btn'),
-    overrideBtnEl: document.getElementById('startpoint-override-btn')
+    overrideBtnEl: document.getElementById('startpoint-override-btn'),
+    simMode: 'startpoint'
   });
 }
 function endSession(){
@@ -1398,7 +1464,8 @@ function goToAimScreen(){
     statusEl: document.getElementById('aim-status'),
     accuracyWrapEl: document.getElementById('aim-accuracy-wrap'),
     primaryBtnEl: document.getElementById('aim-capture-btn'),
-    overrideBtnEl: document.getElementById('aim-override-btn')
+    overrideBtnEl: document.getElementById('aim-override-btn'),
+    simMode: 'aim'
   });
 }
 function confirmAim(){
@@ -1523,7 +1590,8 @@ function selectDiscToRegister(discId){
     statusEl: document.getElementById('throw-status'),
     accuracyWrapEl: document.getElementById('throw-accuracy-wrap'),
     primaryBtnEl: document.getElementById('throw-capture-btn'),
-    overrideBtnEl: document.getElementById('throw-override-btn')
+    overrideBtnEl: document.getElementById('throw-override-btn'),
+    simMode: 'throw'
   });
 }
 function cancelActiveThrow(){
