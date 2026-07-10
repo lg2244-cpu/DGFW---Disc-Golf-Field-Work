@@ -1,33 +1,42 @@
-# DG Field Work – fra prototype til app
+# DG Field Work
 
-Dette er en frittstående PWA (Progressive Web App) versjon av DG Field Work-prototypen.
-Den bruker vanlig nettleser-GPS og vanlig `localStorage`, som fungerer normalt
-her siden siden ikke lenger kjører inni en Claude-forhåndsvisning.
+Frittstående PWA (Progressive Web App) for feltmåling i disc golf. Registrer diskene dine i en "bag", start en økt (session) med ett fast utgangspunkt og én fast sikteretning, og mål kastelengde + sideavvik per disk over så mange runder du vil — uten å måtte gå GPS-runden på nytt for hver runde. Bruker vanlig nettleser-GPS og `localStorage`, ingen backend.
+
+**Live:** https://lg2244-cpu.github.io/DGFW---Disc-Golf-Field-Work/
 
 ## Filer
-- `index.html` — hele appen (HTML/CSS/JS i én fil)
+- `index.html` — hele appen (HTML/CSS/JS i én fil, ingen build-steg)
 - `manifest.json` — gjør appen installerbar på hjemskjerm
-- `service-worker.js` — enkel offline-cache av app-skallet
+- `service-worker.js` — offline-cache av app-skallet. **Bump `CACHE_NAME` ved enhver endring i cachede filer**, ellers ser ikke brukere som allerede har besøkt siden noen oppdatering.
 - `icons/` — app-ikoner (192px og 512px)
+- `TODO.md` — prioritert backlog over planlagt/foreslått arbeid
+- `implementert.md` — logg over hva som allerede er bygget og hvorfor
 
-## 1. Test lokalt
+## Funksjonsstatus
+Se [implementert.md](implementert.md) for hva som er bygget, og [TODO.md](TODO.md) for hva som står for tur.
+
+## Kjør lokalt
 Åpne en terminal i denne mappen og kjør en enkel lokal server (må være HTTPS
 eller `localhost` for at GPS skal fungere):
 
 ```
-python3 -m http.server 8000
+python -m http.server 8080
 ```
 
-Åpne `http://localhost:8000` på telefonen (samme wifi-nett som datamaskinen,
-bruk datamaskinens lokale IP i stedet for `localhost`), eller bare i
-datamaskinens nettleser for å se på design/flyt.
+(Port 8000 kan være blokkert av Windows på enkelte oppsett — 8080 er tryggere.)
 
-## 2. Publiser med ekte HTTPS (nødvendig for GPS på ekte telefon utenfor localhost)
-Enklest gratis-alternativer:
+Åpne `http://localhost:8080` på telefonen (samme wifi-nett som datamaskinen,
+bruk datamaskinens lokale IP i stedet for `localhost` — merk at Windows-brannmuren
+må tillate innkommende tilkoblinger til `python.exe` for at dette skal fungere fra
+en annen enhet), eller bare i datamaskinens nettleser for å se på design/flyt.
+
+## Publisering
+Live-versjonen kjører på GitHub Pages og oppdateres automatisk ved push til
+`master` (kan ta et par minutter). Ønsker du et eget speil:
 
 **GitHub Pages**
-1. Lag et nytt repo, last opp alle filene i denne mappen til rot av repoet.
-2. Settings → Pages → velg branch `main` / mappe `/ (root)`.
+1. Lag et nytt repo (må være offentlig for gratis Pages-hosting, med mindre du har GitHub Pro/Team), last opp alle filene i denne mappen til rot av repoet.
+2. Settings → Pages → velg branch `master` / mappe `/ (root)`.
 3. Du får en URL som `https://dittbrukernavn.github.io/repo-navn/`.
 
 **Netlify (drag-and-drop, ingen konto med Git nødvendig)**
@@ -35,8 +44,8 @@ Enklest gratis-alternativer:
 2. Dra hele mappen inn i nettleservinduet.
 3. Du får en URL med en gang.
 
-## 3. Installer på telefonen
-Åpne URL-en fra steg 2 i telefonens nettleser:
+## Installer på telefonen
+Åpne appens URL i telefonens nettleser:
 - **Android/Chrome:** meny → "Legg til på Hjem-skjerm"
 - **iPhone/Safari:** del-knappen → "Legg til på Hjem-skjerm"
 
@@ -44,20 +53,11 @@ Da får du et app-ikon som åpner appen i fullskjerm uten nettleserramme, og
 GPS-tilgangen fungerer som i en vanlig app (du blir spurt om tillatelse første
 gang).
 
-## 4. Neste steg: ekte nativ app (valgfritt)
-Hvis du senere vil ha appen i App Store / Google Play, eller trenger bedre
-GPS-tilgang i bakgrunnen:
-
-- **Capacitor** (anbefalt) — pakker denne samme HTML/JS-koden i et nativt
-  app-skall. Minimal omskriving. `npm install @capacitor/core @capacitor/cli`,
-  se https://capacitorjs.com/docs/getting-started
-- Fra da av kan du bruke native plugins for mer nøyaktig GPS, bakgrunnssporing,
-  og publisere til app-butikkene.
-
-## Kjente begrensninger å være obs på
-- Nettleser-GPS har typisk ±3–8 m nøyaktighet — helt greit for kastelengder,
-  men ikke landmåler-presist.
-- `localStorage` er per nettleser/enhet. Skal du bruke appen på flere
-  telefoner med delt historikk, må data synkroniseres via en backend
-  (f.eks. en enkel database) — si gjerne til meg om dette blir aktuelt, det er
-  en naturlig neste utbygging.
+## Kjente begrensninger
+- Nettleser-GPS har typisk ±3–8 m rå nøyaktighet. Appen strømmer posisjoner
+  (`watchPosition`) og venter med å låse opp registrer-knappen til signalet er
+  ≤7 m, med en manuell nødluke hvis signalet aldri blir bedre — men den fysiske
+  presisjonstaket til enhetens GPS-brikke kan ikke fjernes helt, bare kompenseres for.
+- `localStorage` er per nettleser/enhet — ingen synkronisering mellom telefoner
+  i dag, og ingen automatisk sikkerhetskopi. Se "Sikkerhetskopi av alt" i
+  [TODO.md](TODO.md) for planlagt løsning (full JSON-eksport/import).
