@@ -32,9 +32,6 @@ Samlet backlog, organisert etter prioritet. Ferdigstilte punkter ligger i [imple
 
 ## Prioritet 3 – Brukervennlighet
 
-- **Skaler UI til skjermhøyden**
-  Tilpass layout/skriftstørrelse/avstander dynamisk til tilgjengelig skjermhøyde (f.eks. med `vh`/`dvh`-enheter eller `ResizeObserver`), slik at alle knapper og elementer på en skjerm er synlige uten scrolling — spesielt viktig på mindre telefoner og i landskapsmodus.
-
 - **Søk i bag**
   Ved mange disker blir listen lang. Legg til søkefelt, favoritt-merking, og filtrering (favoritter + de fire disktypene) i Bag-fanen.
 

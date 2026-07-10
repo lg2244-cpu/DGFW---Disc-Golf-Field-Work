@@ -41,6 +41,7 @@
     --stat-row-mb:16px;
     --statbox-pad:12px 10px;
     --chart-h:110px;
+    --viz-h:150px;
     --tabbar-pad:10px 6px;
     --fab-bottom:96px;
   }
@@ -198,7 +199,7 @@
     color:var(--forest); font-family:'Manrope',sans-serif; font-size:12px; font-weight:600; cursor:pointer;
   }
   .viz-toggle-btn.active{background:var(--disc-orange); border-color:var(--disc-orange); color:#1A1006;}
-  .throw-map-inner{height:220px; border-radius:14px; overflow:hidden;}
+  .throw-map-inner{height:var(--viz-h); border-radius:14px; overflow:hidden;}
 
   .app-version-footer{
     margin-top:28px; padding-top:14px; border-top:1px solid var(--line);
@@ -312,6 +313,7 @@
   .throw-disc-type{font-size:11.5px; color:var(--slate); text-transform:uppercase; letter-spacing:.08em; margin-bottom:10px;}
 
   .corridor-wrap{background:var(--chalk-dim); border:1px solid var(--line); border-radius:14px; padding:6px 4px 0; margin:6px 0;}
+  .corridor-wrap svg{height:var(--viz-h);}
   .distance-readout{
     font-family:'Space Mono',monospace; font-weight:700;
     font-size:var(--distance-fs); margin:8px 0 0; line-height:1;
@@ -415,6 +417,14 @@
 
   /* Krymp layout/skrift/avstander på korte skjermer (små telefoner, landskapsmodus)
      slik at knapper og innhold på en skjerm er synlige uten scrolling. */
+  @media (max-height: 900px){
+    :root{
+      --screen-pad:12px 20px 14px;
+      --throwcard-pad:14px 18px;
+      --distance-fs:34px;
+      --viz-h:130px;
+    }
+  }
   @media (max-height: 700px){
     :root{
       --header-pad:16px 22px 10px;
@@ -429,6 +439,7 @@
       --stat-row-mb:10px;
       --statbox-pad:9px 8px;
       --chart-h:80px;
+      --viz-h:150px;
       --tabbar-pad:6px 6px;
       --fab-bottom:76px;
     }
@@ -447,8 +458,28 @@
       --stat-row-mb:6px;
       --statbox-pad:6px 6px;
       --chart-h:56px;
+      --viz-h:110px;
       --tabbar-pad:4px 6px;
       --fab-bottom:64px;
+    }
+  }
+  @media (max-height: 420px){
+    :root{
+      --header-pad:6px 22px 6px;
+      --screen-pad:6px 20px 8px;
+      --hero-pad:8px 14px;
+      --hero-mb:6px;
+      --pin-size:28px;
+      --pin-mb:3px;
+      --distance-fs:22px;
+      --throwcard-pad:8px 14px;
+      --btn-pad:7px 16px;
+      --stat-row-mb:5px;
+      --statbox-pad:5px 5px;
+      --chart-h:44px;
+      --viz-h:84px;
+      --tabbar-pad:3px 6px;
+      --fab-bottom:56px;
     }
   }
 </style>
@@ -631,13 +662,13 @@
           </div>
           <div class="corridor-wrap" id="throw-corridor" style="display:none;"></div>
           <div class="corridor-wrap" id="throw-map" style="display:none;"></div>
-          <p class="empty-note" id="throw-viz-caption" style="text-align:center; margin-top:4px;">Loddrett = kastelengde fra utgangspunktet, vannrett = sideavvik (V/H) fra siktelinjen</p>
+          <p class="empty-note" id="throw-viz-caption" style="text-align:center; margin-top:4px;">Loddrett = kastelengde, vannrett = sideavvik (V/H)</p>
 
           <div class="distance-readout" id="throw-distance">–</div>
           <div class="distance-unit">meter</div>
           <div id="throw-lateral-wrap"></div>
 
-          <div style="margin-top:14px;">
+          <div style="margin-top:4px;">
             <span class="chip-select-label" style="margin-top:0;">Kasttype (valgfritt)</span>
             <div class="chip-select-row" id="throw-type-row" style="justify-content:center;"></div>
           </div>
@@ -870,8 +901,8 @@
 // ---------- APP-VERSJON ----------
 // Bump APP_VERSION og sett APP_UPDATED_AT til pushe-tidspunktet (lokal tid) ved hver endring —
 // sammen med CACHE_NAME i service-worker.js. Vises nederst i Innstillinger.
-const APP_VERSION = 22;
-const APP_UPDATED_AT = '2026-07-10T23:58:00+02:00';
+const APP_VERSION = 23;
+const APP_UPDATED_AT = '2026-07-11T00:31:00+02:00';
 
 // ---------- STATE ----------
 const COLORS = ["#FF6A39","#D8C25A","#5FA88A","#3B3B3B","#7C8AC8","#C25C5C"];
@@ -2022,7 +2053,7 @@ function setThrowViz(mode){
   document.getElementById('throw-corridor').style.display = mode==='corridor' ? 'block' : 'none';
   document.getElementById('throw-map').style.display = mode==='map' ? 'block' : 'none';
   document.getElementById('throw-viz-caption').textContent = mode==='corridor'
-    ? 'Loddrett = kastelengde fra utgangspunktet, vannrett = sideavvik (V/H) fra siktelinjen'
+    ? 'Loddrett = kastelengde, vannrett = sideavvik (V/H)'
     : 'Gult punkt = utgangspunkt, farget punkt = hvor kastet landet';
   if(mode==='map') renderThrowMap();
 }
