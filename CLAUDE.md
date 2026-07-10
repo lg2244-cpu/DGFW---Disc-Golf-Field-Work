@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Hva dette er
 
-En frittstående vanilla JS Progressive Web App for å måle kastelengde og sideavvik i disc golf i felt, via nettleser-GPS. Ingen backend, ingen build-steg, ingen rammeverk. UI-tekst, kodekommentarer og dokumentasjon (README.md, TODO.md, implementert.md) er på norsk — hold ny tekst konsistent med det, inkludert i denne filen.
+En frittstående vanilla JS Progressive Web App for å måle kastelengde og sideavvik i disc golf i felt, via nettleser-GPS. Ingen backend, ingen build-steg, ingen eget rammeverk i egen kode. Ett unntak: Leaflet (kart-bibliotek) lastes fra CDN kun til kartvisningen i kastregistrering (se Arkitektur). UI-tekst, kodekommentarer og dokumentasjon (README.md, TODO.md, implementert.md) er på norsk — hold ny tekst konsistent med det, inkludert i denne filen.
 
 ## Kommandoer
 
@@ -32,6 +32,7 @@ Alt ligger i `index.html`: CSS i én `<style>`-blokk, all markup, deretter all J
 - **GPS-nøyaktighetssperre**: `startPositionWatch()` / `stopPositionWatch()` pakker inn `navigator.geolocation.watchPosition`. Hovedknappen på en måleskjerm er deaktivert helt til nøyaktigheten er ≤ `ACCURACY_GOOD_M` (7 m); en «bruk nåværende posisjon likevel»-knapp er alltid tilgjengelig som manuell nødluke så snart det finnes ett fiks, slik at brukeren aldri sitter fast hvis GPS-signalet aldri blir bedre (f.eks. i tett skog).
 - **Persistering**: `Store`-objektet pakker inn `localStorage` under et `dgfw:`-prefiks — gå via det i stedet for å kalle `localStorage` direkte. `initApp()` kjører engangs-migreringer (`migrateOldStorageKeys()` for det gamle `kastlinje:`-prefikset, `migrateDiscTypes()` for de gamle 3 diskkategoriene) som må fortsette å fungere for brukere med gammel lagret data — ikke fjern disse uten videre.
 - **Tema**: bevisst lyst, høykontrast-tema (CSS-variabler som `--chalk`, `--forest`) for lesbarhet i sollys — appen brukes alltid utendørs. Ikke innfør mørke paneler/tema.
+- **Kartvisning**: `lat`/`lon` lagres på hvert kast og `startpoint` på hver runde (fra og med `implementert.md` punkt 25) — men KUN for kast registrert etter dette. Eldre lagrede runder mangler disse feltene, så kartvisning (`renderThrowMap()`) er bare bygget for kastet som akkurat registreres i kastregistrering (`lastThrowCoords`, satt live i `confirmThrow()`), ikke for historiske kast i Oversikt/Statistikk. Leaflet+OpenStreetMap-fliser krever nettverkstilgang — fungerer ikke offline, i motsetning til resten av appen.
 
 ## PWA-cache
 

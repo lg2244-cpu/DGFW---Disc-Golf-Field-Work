@@ -4,14 +4,11 @@ Samlet backlog, organisert etter prioritet. Ferdigstilte punkter ligger i [imple
 
 ## Prioritet 1 – Analyse og visualisering
 
-- **Utvikling over tid (resten)**
-  Personlig rekord, beste måned og en egen trendgraf (linje over tid) er nå implementert i disk-detaljvisningen (se implementert.md). Gjenstår: gjennomsnitt siste 10 kast som egen stat (i dag kun "siste 5 vs. tidligere"-trenden), og sammenligning mot alle tidligere kast (i stedet for en valgt periode — dropper behovet for en egen datovelger-UI, enklere å bygge).
-
 - **Slett/korriger enkeltkast**
   I dag kan man kun slette en hel runde, ikke ett enkelt feilmålt kast. Én dårlig GPS-måling forurenser statistikken permanent inntil hele runden slettes.
 
-- **Kartvisning i bakgrunnen (siktepunkt vs. landingspunkt)**
-  Vis telefonens native kart (Apple Maps for iOS / Android SDK for Android, for å unngå lisenskostnader og forenkle oppsett) bak målepunktene, sentrert og zoomet (bounding box) etter kastets GPS-koordinater. Plasser to unike markører — siktepunkt og landingspunkt — og tegn en linje (polyline) mellom dem for å visualisere avviket.
+- **Kartvisning i Oversikt/Statistikk (historiske kast)**
+  Kartvisningen (se implementert.md punkt 26) finnes i dag kun for kastet som akkurat registreres, siden eldre lagrede runder mangler lat/lon. Nå som nye kast lagrer koordinater, kan et tilsvarende kart bygges for historiske kast i Oversikt/disk-detalj etter hvert som nok data samler seg opp — ingen datamigrering nødvendig, bare vent til det finnes ferske runder å vise.
 
 - **Automatisk analyse av disker**
   La appen selv beskrive hvordan en disk oppfører seg, f.eks. "mest stabil i motvind", "størst spredning", "minst sideavvik", "lengst i medvind", "mest konsistent". Bygger videre på eksisterende vind/kasttype-filtrering i disk-detalj.

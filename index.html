@@ -6,6 +6,11 @@
 <title>DG Field Work – disc golf feltmåling</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<!-- Leaflet: kun til kartvisning (siktepunkt/landingspunkt) rett etter et registrert kast — krever nettverk for kartfliser, se implementert.md -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <style>
   :root{
     --forest-dark:#10241A;
@@ -186,6 +191,14 @@
   .filter-group-value{
     font-size:11px; text-transform:none; letter-spacing:0; font-weight:800; color:var(--disc-orange-ink);
   }
+
+  .viz-toggle{display:flex; gap:6px; margin:10px 0 6px; justify-content:center;}
+  .viz-toggle-btn{
+    padding:6px 16px; border-radius:20px; border:1px solid var(--line); background:var(--chalk-dim);
+    color:var(--forest); font-family:'Manrope',sans-serif; font-size:12px; font-weight:600; cursor:pointer;
+  }
+  .viz-toggle-btn.active{background:var(--disc-orange); border-color:var(--disc-orange); color:#1A1006;}
+  .throw-map-inner{height:220px; border-radius:14px; overflow:hidden;}
 
   .app-version-footer{
     margin-top:28px; padding-top:14px; border-top:1px solid var(--line);
@@ -557,8 +570,13 @@
           <button class="btn btn-primary" style="margin-top:6px;" id="throw-capture-btn" onclick="confirmThrow()" disabled>Registrer posisjon (GPS)</button>
           <button class="btn btn-ghost btn-small" id="throw-override-btn" style="margin-top:8px; margin-bottom:0; display:none;" onclick="confirmThrow()">Bruk nåværende posisjon likevel</button>
 
+          <div class="viz-toggle" id="throw-viz-toggle" style="display:none;">
+            <button type="button" class="viz-toggle-btn active" data-viz="corridor" onclick="setThrowViz('corridor')">Diagram</button>
+            <button type="button" class="viz-toggle-btn" data-viz="map" onclick="setThrowViz('map')">Kart</button>
+          </div>
           <div class="corridor-wrap" id="throw-corridor"></div>
-          <p class="empty-note" style="text-align:center; margin-top:4px;">Loddrett = kastelengde fra utgangspunktet, vannrett = sideavvik (V/H) fra siktelinjen</p>
+          <div class="corridor-wrap" id="throw-map" style="display:none;"></div>
+          <p class="empty-note" id="throw-viz-caption" style="text-align:center; margin-top:4px;">Loddrett = kastelengde fra utgangspunktet, vannrett = sideavvik (V/H) fra siktelinjen</p>
 
           <div class="distance-readout" id="throw-distance">–</div>
           <div class="distance-unit">meter</div>
@@ -757,8 +775,8 @@
 // ---------- APP-VERSJON ----------
 // Bump APP_VERSION og sett APP_UPDATED_AT til pushe-tidspunktet (lokal tid) ved hver endring —
 // sammen med CACHE_NAME i service-worker.js. Vises nederst i Innstillinger.
-const APP_VERSION = 18;
-const APP_UPDATED_AT = '2026-07-10T19:02:00+02:00';
+const APP_VERSION = 19;
+const APP_UPDATED_AT = '2026-07-10T19:42:00+02:00';
 
 // ---------- STATE ----------
 const COLORS = ["#FF6A39","#D8C25A","#5FA88A","#3B3B3B","#7C8AC8","#C25C5C"];
@@ -792,6 +810,9 @@ let detailWindFilter = null; // filter i disk-detalj: 'med'|'mot'|'side'|null
 let detailThrowTypeFilter = null; // filter i disk-detalj: 'hyzer'|'anhyzer'|'flatt'|null
 let detailHideImprecise = false; // filter i disk-detalj: skjul kast med accuracy > ACCURACY_GOOD_M
 let devMode = false; // når true: Statistikk-fanen viser devDiscs/devRounds i stedet for ekte discs/rounds
+let throwVizMode = 'corridor'; // 'corridor'|'map' — valgt visning for kastet som akkurat er registrert
+let lastThrowCoords = null; // {lat,lon} for kastet som akkurat er registrert, til kartvisningen
+let throwLeafletMap = null; // Leaflet-instans for kartvisningen, må fjernes (remove()) før den lages på nytt
 let devDiscs = []; // kunstige disker, helt isolert fra ekte discs (egen localStorage-nøkkel)
 let devRounds = []; // kunstige runder, helt isolert fra ekte rounds
 
@@ -1615,6 +1636,9 @@ function selectDiscToRegister(discId){
   document.getElementById('throw-distance').textContent = '–';
   document.getElementById('throw-lateral-wrap').innerHTML = '';
   document.getElementById('throw-corridor').innerHTML = buildCorridorSVG([]);
+  lastThrowCoords = null;
+  setThrowViz('corridor');
+  document.getElementById('throw-viz-toggle').style.display = 'none';
   document.getElementById('throw-capture-btn').style.display = 'block';
   document.getElementById('throw-next-wrap').style.display = 'none';
   document.getElementById('throw-picker-view').style.display = 'none';
@@ -1650,9 +1674,12 @@ function confirmThrow(){
   const disc = discs.find(d=>d.id===currentDiscId);
   // fjern evt. tidligere måling av samme disk (re-registrering overskriver)
   results = results.filter(r=>r.discId!==currentDiscId);
-  results.push({discId:currentDiscId, distance, lateral, along, throwType:currentThrowType, accuracy:coords.accuracy});
+  results.push({discId:currentDiscId, distance, lateral, along, throwType:currentThrowType, accuracy:coords.accuracy, lat:coords.latitude, lon:coords.longitude});
   stopPositionWatch();
 
+  lastThrowCoords = {lat:coords.latitude, lon:coords.longitude};
+  document.getElementById('throw-viz-toggle').style.display = 'flex';
+  setThrowViz('corridor');
   document.getElementById('throw-distance').textContent = distance.toFixed(1);
   document.getElementById('throw-corridor').innerHTML = buildCorridorSVG([{x:lateral||0, y:along, color:disc.color}]);
 
@@ -1677,6 +1704,39 @@ function confirmThrow(){
 function afterThrowContinue(){
   currentDiscId = null;
   showThrowPickerView();
+}
+
+// ---------- KARTVISNING (siktepunkt vs. landingspunkt) ----------
+// Kun mulig for kastet som akkurat er registrert — appen lagrer ikke lat/lon for eldre kast
+// registrert før denne funksjonen fantes, så et historisk kart kan ikke rekonstrueres i ettertid.
+function setThrowViz(mode){
+  throwVizMode = mode;
+  document.querySelectorAll('#throw-viz-toggle .viz-toggle-btn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.viz===mode);
+  });
+  document.getElementById('throw-corridor').style.display = mode==='corridor' ? 'block' : 'none';
+  document.getElementById('throw-map').style.display = mode==='map' ? 'block' : 'none';
+  document.getElementById('throw-viz-caption').textContent = mode==='corridor'
+    ? 'Loddrett = kastelengde fra utgangspunktet, vannrett = sideavvik (V/H) fra siktelinjen'
+    : 'Gult punkt = utgangspunkt (siktepunkt), oransje punkt = hvor kastet landet';
+  if(mode==='map') renderThrowMap();
+}
+function renderThrowMap(){
+  const mapWrap = document.getElementById('throw-map');
+  if(!lastThrowCoords || !startpoint){
+    mapWrap.innerHTML = '<p class="empty-note" style="text-align:center; padding:30px 0;">Kart krever GPS-posisjon for både utgangspunkt og kast.</p>';
+    return;
+  }
+  if(throwLeafletMap){ throwLeafletMap.remove(); throwLeafletMap = null; }
+  mapWrap.innerHTML = '<div class="throw-map-inner" id="throw-map-inner"></div>';
+  const origin = [startpoint.lat, startpoint.lon];
+  const landing = [lastThrowCoords.lat, lastThrowCoords.lon];
+  throwLeafletMap = L.map('throw-map-inner', {zoomControl:false, attributionControl:false});
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19}).addTo(throwLeafletMap);
+  L.circleMarker(origin, {radius:8, color:'#8A6410', weight:2, fillColor:'#D8C25A', fillOpacity:1}).addTo(throwLeafletMap);
+  L.circleMarker(landing, {radius:8, color:'#B8401B', weight:2, fillColor:'#FF6A39', fillOpacity:1}).addTo(throwLeafletMap);
+  L.polyline([origin, landing], {color:'#57685D', weight:2, dashArray:'5 6'}).addTo(throwLeafletMap);
+  throwLeafletMap.fitBounds([origin, landing], {padding:[30,30]});
 }
 
 // ---------- CORRIDOR SVG (delt visualisering) ----------
@@ -1707,7 +1767,7 @@ function buildCorridorSVG(points){
 // ---------- OVERSIKT ----------
 function maybeSaveRound(){
   if(results.length===0) return;
-  const throwsSnapshot = results.map(r=>({discId:r.discId, distance:r.distance, lateral:r.lateral, along:r.along, throwType:r.throwType||null, accuracy:r.accuracy||null}));
+  const throwsSnapshot = results.map(r=>({discId:r.discId, distance:r.distance, lateral:r.lateral, along:r.along, throwType:r.throwType||null, accuracy:r.accuracy||null, lat:r.lat!=null?r.lat:null, lon:r.lon!=null?r.lon:null}));
   if(savedRoundId!==null){
     // runden er allerede lagret én gang - oppdater den med evt. nye/re-registrerte kast
     const existing = rounds.find(r=>r.id===savedRoundId);
@@ -1725,7 +1785,8 @@ function maybeSaveRound(){
     date: new Date().toISOString(),
     aimUsed: !!aimVector,
     wind: {direction:windDirection, strength:windStrength},
-    throws: throwsSnapshot
+    throws: throwsSnapshot,
+    startpoint: startpoint ? {lat:startpoint.lat, lon:startpoint.lon} : null
   });
   savedRoundId = id;
   persistRounds();
@@ -1919,6 +1980,21 @@ function renderDiscDetail(){
       trendTxt = Math.abs(delta).toFixed(1) + ' m ' + (delta>0?'lengre':'kortere') + ' siste 5 kast';
     }
     chipsHtml += `<span class="lateral-chip ${trendCls}">${arrow} ${trendTxt}</span>`;
+  }
+  if(chronological.length>10){
+    const last10 = chronological.slice(-10);
+    const earlierThan10 = chronological.slice(0, -10);
+    const last10Avg = last10.reduce((a,b)=>a+b.distance,0)/last10.length;
+    const earlierThan10Avg = earlierThan10.reduce((a,b)=>a+b.distance,0)/earlierThan10.length;
+    const delta10 = last10Avg - earlierThan10Avg;
+    chipsHtml += `<span class="lateral-chip chip-neutral">${last10Avg.toFixed(0)} m snitt siste 10 kast</span>`;
+    let trend10Cls = 'chip-neutral', arrow10 = '→', trend10Txt = 'på linje med alle tidligere kast';
+    if(Math.abs(delta10) >= 0.5){
+      trend10Cls = delta10>0 ? 'chip-right' : 'chip-left';
+      arrow10 = delta10>0 ? '↑' : '↓';
+      trend10Txt = Math.abs(delta10).toFixed(1) + ' m ' + (delta10>0?'lengre':'kortere') + ' enn alle tidligere kast';
+    }
+    chipsHtml += `<span class="lateral-chip ${trend10Cls}">${arrow10} ${trend10Txt}</span>`;
   }
   const monthGroups = {};
   chronological.forEach(t=>{

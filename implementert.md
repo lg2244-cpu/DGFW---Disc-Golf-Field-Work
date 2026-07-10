@@ -139,3 +139,16 @@ Punkt 5 og 23 avdekket samme friksjon fra to kanter: cache-først service worker
 - Service worker-registreringen (helt nederst i `<script>`-blokken) lytter nå på `updatefound` på `ServiceWorkerRegistration`-objektet, og videre på `statechange` for den nye installerende workeren. Banneret vises kun når state blir `'installed'` **og** `navigator.serviceWorker.controller` allerede finnes — det skillet er avgjørende: uten det ville banneret feilaktig vist seg ved aller første installasjon også (der det jo ikke finnes noen "gammel versjon" å oppdatere fra).
 - Siden `service-worker.js` allerede kaller `self.skipWaiting()` ubetinget i `install`, aktiveres og overtar den nye workeren kontrollen (`clients.claim()`) i praksis rett etter at banneret vises — et vanlig `location.reload()` er derfor nok, ingen `postMessage`-håndtering trengs for å be workeren hoppe over en «waiting»-fase.
 - Verifisert ende-til-ende i preview ved å simulere en ekte oppgradering (registrere en "gammel" versjon, endre `CACHE_NAME`, reloade uten å tømme cache) — banneret dukket opp korrekt, og forsvant igjen etter at "Oppdater" ble trykket og siden hadde hentet den nye versjonen.
+
+## 25. Snitt siste 10 kast + sammenligning mot alle tidligere kast
+
+Utvidet disk-detaljens chip-rad med to nye chips (vises når en disk har >10 kast, ved siden av den eksisterende "siste 5 kast"-trenden): rått snitt for de siste 10 kastene, og en sammenligning av det snittet mot *alle* kast før de siste 10 (i stedet for én valgt tidligere periode — det ville krevd en egen datovelger-UI som ikke finnes i appen). Samme visuelle mønster (pil + farge) som den eksisterende korttids-trenden, bare med et lengre og mer stabilt tidsvindu.
+
+## 26. Kartvisning av siktepunkt/landingspunkt i kastregistrering
+
+Ny veksleknapp ("Diagram"/"Kart") ved siden av korridor-SVG-en i kastregistrering, rett etter at et kast er bekreftet. "Kart" viser et ekte Leaflet-kart (OpenStreetMap-fliser) med to markører — gult utgangspunkt (siktepunkt) og oransje landingspunkt — og en stiplet linje mellom dem, zoomet til å vise begge (`fitBounds`).
+
+- **Arkitekturunntak**: Leaflet lastes fra CDN (`unpkg.com`, med SRI-hash) i `<head>` — det eneste stedet appen bruker et eksternt bibliotek i selve koden (jf. CLAUDE.md). Kartflisene krever nettverkstilgang og fungerer ikke offline, i motsetning til resten av appen.
+- **Datamodell-utvidelse**: appen lagret tidligere *ingen* faktiske GPS-koordinater — kun lokale meter (avstand/sideavvik) relativt til utgangspunktet. Hvert kast får nå også `lat`/`lon` (satt i `confirmThrow()`), og hver lagret runde får `startpoint` (`{lat, lon}`, satt i `maybeSaveRound()`). Eldre runder mangler disse feltene — helt ufarlig, siden ingen eksisterende kode leser dem.
+- **Bevisst avgrenset**: kartet kan derfor kun vises for kastet som *akkurat* er registrert (live GPS-fiks tilgjengelig i `lastThrowCoords`), ikke for historiske kast i Oversikt/Statistikk — de manglet lat/lon frem til nå. Fremtidige kast får dataen lagret, så en historisk kartvisning kan bygges senere uten datamigrering.
+- Verifisert i preview med simulert GPS (dev-mode, se punkt 22): bekreftet at kartfliser faktisk hentes (4 nettverkskall til `tile.openstreetmap.org`, alle 200 OK), at begge markører + linje tegnes riktig, og at `startpoint`/`lat`/`lon` faktisk persisteres korrekt på en lagret runde.
