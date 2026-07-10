@@ -41,9 +41,6 @@ Samlet backlog, organisert etter prioritet. Ferdigstilte punkter ligger i [imple
 - **Søk i bag**
   Ved mange disker blir listen lang. Legg til søkefelt, favoritt-merking, og filtrering (favoritter + de fire disktypene) i Bag-fanen.
 
-- **Varsel om ny versjon**
-  Cache-first service worker betyr at man i dag ser oppdateringer først ved *andre* besøk etter en deploy. En liten "Ny versjon tilgjengelig — trykk for å oppdatere"-melding (lytt på `updatefound`/`controllerchange` på service worker-registreringen) ville fjernet forvirringen.
-
 - **Små forbedringer:**
   - Vis antall valgte disker på "Start runde →"-knappen
   - Sortering av disker i Bag (f.eks. alfabetisk, etter type, etter snittavstand)

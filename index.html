@@ -93,6 +93,16 @@
   .wordmark .dot{width:8px;height:8px;border-radius:50%;background:var(--disc-orange);display:inline-block;}
   .tagline{font-size:11.5px;color:var(--slate); letter-spacing:.03em;}
   .storage-note{font-size:10px; color:var(--turf-yellow-ink); margin-top:2px; display:none;}
+  .update-banner{
+    display:none; align-items:center; justify-content:space-between; gap:10px;
+    margin-top:8px; padding:8px 8px 8px 12px; border-radius:10px;
+    background:rgba(255,106,57,0.14); border:1px solid rgba(255,106,57,0.4);
+    font-size:12px; color:var(--disc-orange-ink); font-weight:600;
+  }
+  .update-banner button{
+    flex-shrink:0; padding:6px 14px; border-radius:20px; border:none;
+    background:var(--disc-orange); color:#1A1006; font-weight:800; font-size:11.5px; cursor:pointer;
+  }
 
   .screens{flex:1; position:relative; overflow:hidden;}
   .screen{
@@ -444,6 +454,10 @@
     <div class="wordmark"><span class="dot"></span>DG FIELD WORK</div>
     <div class="tagline">Feltmåling for disc golf</div>
     <div class="storage-note" id="storage-note">Lagring utilgjengelig — historikk lagres kun i denne økten</div>
+    <div class="update-banner" id="update-banner">
+      <span>🔄 Ny versjon er klar</span>
+      <button type="button" onclick="location.reload()">Oppdater</button>
+    </div>
   </header>
 
   <div class="screens">
@@ -743,8 +757,8 @@
 // ---------- APP-VERSJON ----------
 // Bump APP_VERSION og sett APP_UPDATED_AT til pushe-tidspunktet (lokal tid) ved hver endring —
 // sammen med CACHE_NAME i service-worker.js. Vises nederst i Innstillinger.
-const APP_VERSION = 17;
-const APP_UPDATED_AT = '2026-07-10T18:45:00+02:00';
+const APP_VERSION = 18;
+const APP_UPDATED_AT = '2026-07-10T19:02:00+02:00';
 
 // ---------- STATE ----------
 const COLORS = ["#FF6A39","#D8C25A","#5FA88A","#3B3B3B","#7C8AC8","#C25C5C"];
@@ -2151,7 +2165,19 @@ function deleteRound(roundId){
 initApp();
 if('serviceWorker' in navigator){
   window.addEventListener('load', ()=>{
-    navigator.serviceWorker.register('service-worker.js').catch(()=>{ /* offline-støtte er valgfritt, appen funker uten */ });
+    navigator.serviceWorker.register('service-worker.js').then(reg=>{
+      // updatefound + statechange('installed') MED en eksisterende controller = en ekte oppdatering
+      // (skiller fra aller første installasjon, der det ikke finnes noen tidligere controller ennå).
+      reg.addEventListener('updatefound', ()=>{
+        const newWorker = reg.installing;
+        if(!newWorker) return;
+        newWorker.addEventListener('statechange', ()=>{
+          if(newWorker.state==='installed' && navigator.serviceWorker.controller){
+            document.getElementById('update-banner').style.display = 'flex';
+          }
+        });
+      });
+    }).catch(()=>{ /* offline-støtte er valgfritt, appen funker uten */ });
   });
 }
 </script>

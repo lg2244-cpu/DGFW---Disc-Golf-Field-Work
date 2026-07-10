@@ -131,3 +131,11 @@ De tre filterne i disk-detalj (vindretning, kasttype, presisjon) tok tidligere a
 To nye konstanter øverst i `<script>`-blokken, `APP_VERSION` og `APP_UPDATED_AT` (ISO-tidspunkt med tidssone), vises nederst i Innstillinger som «Versjon 17 · Sist oppdatert 10.07.2026 kl. 18:45» (`formatAppUpdatedAt()`, satt i `initApp()`). Gir brukeren en enkel måte å se om telefonen faktisk har hentet siste versjon fra service worker-cachen.
 
 Siden appen ikke har noe build-steg, er disse to konstantene rent manuelle — CLAUDE.md er oppdatert med at de skal bumpes/settes sammen med `CACHE_NAME` ved hver fremtidig endring, samme rutine som cache-bumpen i punkt 5.
+
+## 24. Varsel om ny versjon ("🔄 Ny versjon er klar")
+
+Punkt 5 og 23 avdekket samme friksjon fra to kanter: cache-først service worker betyr at en bruker som allerede har appen åpen/installert, ikke ser en ny versjon før et *andre* besøk etter deploy — helt stille, uten noe varsel om at det finnes noe å oppdatere til. Løst med en liten banner i headeren («🔄 Ny versjon er klar», med en «Oppdater»-knapp som kaller `location.reload()`), skjult som standard.
+
+- Service worker-registreringen (helt nederst i `<script>`-blokken) lytter nå på `updatefound` på `ServiceWorkerRegistration`-objektet, og videre på `statechange` for den nye installerende workeren. Banneret vises kun når state blir `'installed'` **og** `navigator.serviceWorker.controller` allerede finnes — det skillet er avgjørende: uten det ville banneret feilaktig vist seg ved aller første installasjon også (der det jo ikke finnes noen "gammel versjon" å oppdatere fra).
+- Siden `service-worker.js` allerede kaller `self.skipWaiting()` ubetinget i `install`, aktiveres og overtar den nye workeren kontrollen (`clients.claim()`) i praksis rett etter at banneret vises — et vanlig `location.reload()` er derfor nok, ingen `postMessage`-håndtering trengs for å be workeren hoppe over en «waiting»-fase.
+- Verifisert ende-til-ende i preview ved å simulere en ekte oppgradering (registrere en "gammel" versjon, endre `CACHE_NAME`, reloade uten å tømme cache) — banneret dukket opp korrekt, og forsvant igjen etter at "Oppdater" ble trykket og siden hadde hentet den nye versjonen.
