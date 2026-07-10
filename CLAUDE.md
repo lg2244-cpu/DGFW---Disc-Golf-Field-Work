@@ -18,6 +18,10 @@ python -m http.server 8080
 
 Det finnes ingen automatiserte tester — verifiser endringer ved å teste flyten i en nettleser.
 
+## Git
+
+Kjør alltid `git status` (og `git fetch && git log HEAD..origin/master --oneline` for å se om remote har commits du ikke har lokalt) **før** du begynner å kode. Brukeren kjører av og til flere Claude Code-økter parallelt mot dette repoet uten å huske det selv — det har allerede ført til en reell merge-konflikt (2026-07-10, to økter endret `index.html`/`TODO.md`/`service-worker.js` samtidig). Oppdager du at remote har endringer du ikke har, `git pull`/merge før du fortsetter i stedet for å bygge videre på et utdatert grunnlag.
+
 ## Arkitektur
 
 Alt ligger i `index.html`: CSS i én `<style>`-blokk, all markup, deretter all JS i én `<script>`-blokk nederst. Ingen moduler, ingen imports, ingen build-artefakter å holde synkronisert — rediger filen direkte.
